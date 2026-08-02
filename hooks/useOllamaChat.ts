@@ -8,6 +8,7 @@ export interface Message {
   image?: string
   imageName?: string
   documentText?: string
+  loadingText?: string
 }
 
 export interface ChatAttachment {
@@ -18,7 +19,7 @@ export interface ChatAttachment {
 
 export function useOllamaChat(model: string) {
   const [messages, setMessages] = useState<Message[]>([
-    { id: 'welcome', role: 'assistant', content: `Chatting with **${model}**. Say anything!` },
+    { id: 'welcome', role: 'assistant', content: getWelcomeMessage(model) },
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -44,7 +45,7 @@ export function useOllamaChat(model: string) {
 
     const history = messagesRef.current.map((m) => ({
       role: m.role,
-      content: m.content,
+      content: sanitizeHistoryContent(m.content),
       ...(m.image && !m.documentText ? { images: [getBase64Image(m.image)] } : {}),
       ...(m.documentText ? { content: `${m.content}\n\nAttached document:\n${m.documentText}` } : {}),
     }))
@@ -140,6 +141,11 @@ export function useOllamaChat(model: string) {
   const append = useCallback((msg: Omit<Message, 'id'>) => {
     const id = crypto.randomUUID()
     setMessages((prev) => [...prev, { id, ...msg }])
+    return id
+  }, [])
+
+  const updateMessage = useCallback((id: string, patch: Partial<Omit<Message, 'id'>>) => {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)))
   }, [])
 
   const stop = useCallback(() => {
@@ -149,13 +155,24 @@ export function useOllamaChat(model: string) {
   const reset = useCallback(() => {
     abortRef.current?.abort()
     setMessages([
-      { id: 'welcome', role: 'assistant', content: `Chatting with **${model}**. Say anything!` },
+      { id: 'welcome', role: 'assistant', content: getWelcomeMessage(model) },
     ])
     setInput('')
     setIsLoading(false)
   }, [model])
 
-  return { messages, input, setInput, sendMessage, append, isLoading, stop, reset }
+  return { messages, input, setInput, sendMessage, append, updateMessage, isLoading, stop, reset }
+}
+
+function getWelcomeMessage(model: string): string {
+  switch (model) {
+    case 'gemma-code-pro:latest':
+      return 'สวัสดีสอบถามฉันเรื่อง coding ได้เลยนะ'
+    case 'gemma-celestial:latest':
+      return 'สวัสดีสอบถามฉันเรื่องดูดวงได้เลยนะ'
+    default:
+      return `สวัสดีสามารถคุยกับฉันได้ทุกเรื่องนะ`
+  }
 }
 
 function splitJsonObjects(input: string): { objects: string[]; remainder: string } {
@@ -204,4 +221,8 @@ function splitJsonObjects(input: string): { objects: string[]; remainder: string
 
 function getBase64Image(dataUrl: string): string {
   return dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl
+}
+
+function sanitizeHistoryContent(content: string): string {
+  return content.replace(/!\[[^\]]*\]\(data:[^)]+\)/g, '[generated image]')
 }

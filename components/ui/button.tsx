@@ -7,9 +7,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-green-900 text-green-400 hover:bg-green-800",
-        outline: "border border-zinc-800 bg-transparent text-zinc-400 hover:border-green-500 hover:text-green-400",
-        ghost: "text-zinc-500 hover:text-green-500 hover:bg-zinc-900",
+        default: "bg-green-600 text-white hover:bg-green-700 dark:bg-green-900 dark:text-green-400 dark:hover:bg-green-800",
+        outline: "border border-zinc-300 bg-transparent text-zinc-600 hover:border-green-500 hover:text-green-600 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-green-500 dark:hover:text-green-400",
+        ghost: "text-zinc-500 hover:text-green-600 hover:bg-zinc-100 dark:hover:text-green-500 dark:hover:bg-zinc-900",
       },
       size: {
         default: "h-10 px-4 py-2",

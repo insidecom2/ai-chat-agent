@@ -21,3 +21,76 @@ export function formatImagePrompt(
 export function getPollinationsUrl(prompt: string): string {
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`
 }
+
+export function extractImagePrompt(content: string): string | null {
+  const trimmed = content.trim()
+  if (!trimmed) return null
+
+  const direct = findImagePrompt(tryParseJson(trimmed))
+  if (direct) return direct
+
+  const block = extractJsonBlock(trimmed)
+  if (block) {
+    const fromBlock = findImagePrompt(tryParseJson(block))
+    if (fromBlock) return fromBlock
+  }
+
+  return null
+}
+
+function tryParseJson(text: string): unknown | undefined {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
+function findImagePrompt(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const parsed = tryParseJson(value)
+    if (parsed !== undefined) return findImagePrompt(parsed)
+    return value.trim() || null
+  }
+  if (!value || typeof value !== 'object') return null
+
+  const record = value as Record<string, unknown>
+  for (const key of ['action_input', 'actionInput', 'input', 'prompt', 'prompt_text']) {
+    const field = record[key]
+    if (field === undefined) continue
+    const nested = findImagePrompt(field)
+    if (nested) return nested
+  }
+  return null
+}
+
+function extractJsonBlock(text: string): string | undefined {
+  const start = text.indexOf('{')
+  if (start === -1) return undefined
+
+  let depth = 0
+  let inString = false
+  let escaped = false
+  for (let i = start; i < text.length; i += 1) {
+    const character = text[i]
+    if (inString) {
+      if (escaped) {
+        escaped = false
+      } else if (character === '\\') {
+        escaped = true
+      } else if (character === '"') {
+        inString = false
+      }
+      continue
+    }
+    if (character === '"') {
+      inString = true
+    } else if (character === '{') {
+      depth += 1
+    } else if (character === '}') {
+      depth -= 1
+      if (depth === 0) return text.slice(start, i + 1)
+    }
+  }
+  return undefined
+}

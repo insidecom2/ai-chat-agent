@@ -22,4 +22,9 @@ describe('COMMANDS', () => {
     const keys = COMMANDS.map((c) => c.key);
     expect(keys).toContain('/gen-image');
   });
+
+  it('includes /gemini-image', () => {
+    const keys = COMMANDS.map((c) => c.key);
+    expect(keys).toContain('/gemini-image');
+  });
 });

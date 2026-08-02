@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --scrollbar-thumb: #d4d4d8;
+}
+
+.dark {
+  --scrollbar-thumb: #27272a;
+}
+
 @layer utilities {
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
@@ -10,7 +18,7 @@
     background: transparent;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #222;
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 }

@@ -11,7 +11,7 @@ export default function Page() {
   }
 
   return (
-    <div className="h-screen w-full bg-[#0a0a0f]">
+    <div className="h-screen w-full bg-zinc-50 dark:bg-[#0a0a0f]">
       <ModelListView onSelectModel={setSelectedModel} />
     </div>
   );
