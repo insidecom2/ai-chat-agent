@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ChatAttachment, useOllamaChat } from '@/hooks/useOllamaChat';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Paperclip, X, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Paperclip, X, Image as ImageIcon, Sparkles, Bot } from 'lucide-react';
 import { COMMANDS, Command } from '@/lib/commands';
 import { formatImagePrompt, getPollinationsUrl, extractImagePrompt } from '@/lib/image-utils';
 import ReactMarkdown from 'react-markdown';
@@ -181,7 +181,15 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
       const finalPrompt = formatImagePrompt(contextPrompt, messages);
       append({ role: 'user', content: text });
       const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
-      generateGeminiImage(finalPrompt, imgId);
+      generateImage('/api/gemini', finalPrompt, imgId);
+    } else if (cmd.key === '/hugging-face') {
+      const prompt = text.slice(cmd.key.length).trim();
+      const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+      const contextPrompt = prompt || lastUserMsg?.content || '';
+      const finalPrompt = formatImagePrompt(contextPrompt, messages);
+      append({ role: 'user', content: text });
+      const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
+      generateImage('/api/huggingface', finalPrompt, imgId);
     }
   };
 
@@ -204,13 +212,23 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
       return;
     }
     const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
-    generateGeminiImage(prompt, imgId);
+    generateImage('/api/gemini', prompt, imgId);
   };
 
-  const generateGeminiImage = useCallback(async (prompt: string, messageId: string) => {
+  const handleHuggingFaceImage = (prompt: string) => {
+    if (geminiLoading) return;
+    if (!prompt.trim()) {
+      toast('No image prompt found in this response.');
+      return;
+    }
+    const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
+    generateImage('/api/huggingface', prompt, imgId);
+  };
+
+  const generateImage = useCallback(async (apiPath: string, prompt: string, messageId: string) => {
     setGeminiLoading(true);
     try {
-      const res = await fetch('/api/gemini', {
+      const res = await fetch(apiPath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
@@ -299,7 +317,7 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
                       : 'bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-tl-sm dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
                   }`}
                 >
-                  <MessageContent message={m} onGenImage={handleGenImage} onGeminiImage={handleGeminiImage} />
+                  <MessageContent message={m} onGenImage={handleGenImage} onGeminiImage={handleGeminiImage} onHuggingFaceImage={handleHuggingFaceImage} />
                 </div>
               </div>
             </div>
@@ -392,10 +410,11 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
   );
 }
 
-function MessageContent({ message, onGenImage, onGeminiImage }: {
+function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage }: {
   message: { id: string; role: string; content: string; image?: string; imageName?: string; loadingText?: string }
   onGenImage?: (prompt: string) => void
   onGeminiImage?: (prompt: string) => void
+  onHuggingFaceImage?: (prompt: string) => void
 }) {
   const { toast } = useToast()
   const addToHistory = useCopyHistory((s) => s.add)
@@ -505,6 +524,14 @@ function MessageContent({ message, onGenImage, onGeminiImage }: {
           >
             <Sparkles className="w-3 h-3" />
             Gemini Image
+          </button>
+          <button
+            type="button"
+            onClick={() => onHuggingFaceImage?.(imagePrompt)}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
+          >
+            <Bot className="w-3 h-3" />
+            Hugging Face
           </button>
         </div>
       )}

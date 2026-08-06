@@ -40,25 +40,51 @@ describe('formatImagePrompt', () => {
 });
 
 describe('getPollinationsUrl', () => {
-  it('encodes simple prompt', () => {
-    expect(getPollinationsUrl('hello')).toBe('https://image.pollinations.ai/prompt/hello');
+  it('encodes simple prompt with quality defaults', () => {
+    expect(getPollinationsUrl('hello')).toBe(
+      'https://image.pollinations.ai/prompt/hello?model=flux&enhance=true&width=512&height=512'
+    );
   });
 
   it('encodes spaces', () => {
     expect(getPollinationsUrl('hello world')).toBe(
-      'https://image.pollinations.ai/prompt/hello%20world'
+      'https://image.pollinations.ai/prompt/hello%20world?model=flux&enhance=true&width=512&height=512'
     );
   });
 
   it('encodes special characters', () => {
     expect(getPollinationsUrl('cat & dog')).toBe(
-      'https://image.pollinations.ai/prompt/cat%20%26%20dog'
+      'https://image.pollinations.ai/prompt/cat%20%26%20dog?model=flux&enhance=true&width=512&height=512'
     );
   });
 
   it('encodes unicode', () => {
     expect(getPollinationsUrl('宇宙')).toBe(
-      'https://image.pollinations.ai/prompt/%E5%AE%87%E5%AE%99'
+      'https://image.pollinations.ai/prompt/%E5%AE%87%E5%AE%99?model=flux&enhance=true&width=512&height=512'
+    );
+  });
+
+  it('disables enhance when set to false', () => {
+    expect(getPollinationsUrl('hello', { enhance: false })).toBe(
+      'https://image.pollinations.ai/prompt/hello?model=flux&width=512&height=512'
+    );
+  });
+
+  it('supports custom model', () => {
+    expect(getPollinationsUrl('hello', { model: 'turbo' })).toBe(
+      'https://image.pollinations.ai/prompt/hello?model=turbo&enhance=true&width=512&height=512'
+    );
+  });
+
+  it('supports negative prompt', () => {
+    expect(getPollinationsUrl('hello', { negativePrompt: 'blurry' })).toBe(
+      'https://image.pollinations.ai/prompt/hello?model=flux&enhance=true&negative_prompt=blurry&width=512&height=512'
+    );
+  });
+
+  it('supports custom width and height', () => {
+    expect(getPollinationsUrl('hello', { width: 1024, height: 768 })).toBe(
+      'https://image.pollinations.ai/prompt/hello?model=flux&enhance=true&width=1024&height=768'
     );
   });
 });

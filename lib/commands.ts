@@ -7,6 +7,10 @@ export const COMMANDS = [
     key: '/gemini-image',
     desc: 'Generate image with Gemini',
   },
+  {
+    key: '/hugging-face',
+    desc: 'Generate image with Hugging Face',
+  },
 ] as const
 
 export type Command = (typeof COMMANDS)[number]

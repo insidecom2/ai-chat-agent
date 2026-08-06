@@ -18,8 +18,23 @@ export function formatImagePrompt(
   return cleaned || 'A beautiful landscape'
 }
 
-export function getPollinationsUrl(prompt: string): string {
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`
+export interface PollinationsOptions {
+  model?: string
+  enhance?: boolean
+  negativePrompt?: string
+  width?: number
+  height?: number
+}
+
+export function getPollinationsUrl(prompt: string, options?: PollinationsOptions): string {
+  const params = new URLSearchParams()
+  params.set('model', options?.model ?? 'flux')
+  if (options?.enhance !== false) params.set('enhance', 'true')
+  if (options?.negativePrompt) params.set('negative_prompt', options.negativePrompt)
+  params.set('width', String(options?.width ?? 512))
+  params.set('height', String(options?.height ?? 512))
+  const query = params.toString()
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}${query ? `?${query}` : ''}`
 }
 
 export function extractImagePrompt(content: string): string | null {

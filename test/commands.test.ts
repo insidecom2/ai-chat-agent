@@ -27,4 +27,9 @@ describe('COMMANDS', () => {
     const keys = COMMANDS.map((c) => c.key);
     expect(keys).toContain('/gemini-image');
   });
+
+  it('includes /hugging-face', () => {
+    const keys = COMMANDS.map((c) => c.key);
+    expect(keys).toContain('/hugging-face');
+  });
 });
