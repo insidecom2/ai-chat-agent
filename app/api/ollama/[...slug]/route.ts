@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireUserId } from '@/lib/db/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const MAX_REQUEST_BODY = 30_000_000
+
 export async function GET(request: NextRequest) {
+  if (!(await requireUserId())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   return proxyRequest(request);
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await requireUserId())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   return proxyRequest(request);
 }
 
@@ -28,10 +37,15 @@ async function proxyRequest(request: NextRequest) {
   }
 
   try {
+    const body = request.method === 'POST' ? await request.text() : undefined
+    if (body && Buffer.byteLength(body) > MAX_REQUEST_BODY) {
+      return NextResponse.json({ error: 'Request body too large.' }, { status: 413 })
+    }
+
     const response = await fetch(targetUrl, {
       method: request.method,
       headers,
-      body: request.method === 'POST' ? await request.text() : undefined,
+      body,
     });
 
     const responseHeaders = new Headers({

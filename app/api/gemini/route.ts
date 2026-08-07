@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractGeminiImage, parseGeminiError } from '@/lib/gemini';
+import { requireUserId } from '@/lib/db/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -8,6 +9,10 @@ const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models
 const REQUEST_TIMEOUT_MS = 60_000;
 
 export async function POST(request: NextRequest) {
+  if (!(await requireUserId())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const apiKey = process.env.GEMINI_API_KEY || '';
   if (!apiKey) {
     return NextResponse.json(

@@ -6,7 +6,6 @@ describe('useHostStore', () => {
     useHostStore.setState({ host: 'http://localhost:11434' });
     localStorage.clear();
   });
-
   it('starts with default host', () => {
     const state = useHostStore.getState();
     expect(state.host).toBe('http://localhost:11434');

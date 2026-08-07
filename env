@@ -6,3 +6,12 @@ GEMINI_MODEL=gemini-2.5-flash-image
 HF_TOKEN=
 HF_MODEL=
 HF_PROVIDER=nscale
+
+TURSO_DATABASE_URL=
+TURSO_AUTH_TOKEN=
+
+AUTH_GOOGLE_ID=xxxxxxxx.apps.googleusercontent.com
+AUTH_GOOGLE_SECRET=xxxxxxxxxxxxxxxx
+AUTH_SECRET=
+AUTH_TRUST_HOST=true
+AUTH_URL=http://localhost:5001

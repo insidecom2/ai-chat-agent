@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ChatAttachment, useOllamaChat } from '@/hooks/useOllamaChat';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Paperclip, X, Image as ImageIcon, Sparkles, Bot } from 'lucide-react';
+import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu } from 'lucide-react';
 import { COMMANDS, Command } from '@/lib/commands';
 import { formatImagePrompt, getPollinationsUrl, extractImagePrompt } from '@/lib/image-utils';
 import ReactMarkdown from 'react-markdown';
@@ -14,16 +14,43 @@ import { extractImageText, extractPdfText } from '@/lib/document-utils';
 import ThemeToggle from '@/components/ThemeToggle';
 import CodeBlock from '@/components/CodeBlock';
 import { replaceLatexSymbols } from '@/lib/latex-symbols';
+import { safeUrl } from '@/lib/utils';
+import { useModels } from '@/hooks/useModels';
+import ChatHistorySidebar from '@/components/ChatHistorySidebar';
+import UserMenu from '@/components/UserMenu';
+import type { Conversation } from '@/lib/db/types';
 
 interface ChatViewProps {
   model: string;
+  conversationId?: string | null;
+  onConversationChange: (id: string | null) => void;
   onBack: () => void;
+  onModelChange: (model: string) => void;
+  onNewChat: () => void;
+  onOpenConversation: (conversation: Conversation) => void;
+  onConversationDeleted?: (id: string) => void;
 }
 
-export default function ChatView({ model, onBack }: ChatViewProps) {
-  const { messages, input, setInput, sendMessage, append, updateMessage, isLoading, reset } = useOllamaChat(model);
+export default function ChatView({ model, conversationId, onConversationChange, onBack, onModelChange, onNewChat, onOpenConversation, onConversationDeleted }: ChatViewProps) {
+  const { data: models } = useModels();
+  const {
+    messages,
+    input,
+    setInput,
+    sendMessage,
+    append,
+    updateMessage,
+    persistMessage,
+    isLoading,
+    isConversationLoading,
+    hasMore,
+    isLoadingEarlier,
+    loadEarlier,
+    reset,
+  } = useOllamaChat(model, conversationId, onConversationChange);
   const { toast } = useToast();
   const [cmdIdx, setCmdIdx] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [attachedImage, setAttachedImage] = useState<ChatAttachment & { dataUrl?: string } | null>(null);
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [geminiLoading, setGeminiLoading] = useState(false);
@@ -38,13 +65,13 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
   }, [messages]);
 
   const handleBack = () => {
-    reset();
     onBack();
   };
 
   const handleNewChat = () => {
     reset();
     setAttachedImage(null);
+    onNewChat();
   };
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,7 +186,7 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
   };
 
   const executeCommand = (text: string, cmd: Command) => {
-    if (geminiLoading) return;
+    if (geminiLoading || isLoading || isConversationLoading) return;
     setInput('');
 
     if (cmd.key === '/gen-image') {
@@ -168,11 +195,15 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
       const contextPrompt = prompt || lastUserMsg?.content || '';
       const finalPrompt = formatImagePrompt(contextPrompt, messages);
       append({ role: 'user', content: text });
+      void persistMessage({ role: 'user', content: text }).catch((error) => console.error('Failed to save command:', error));
       append({ role: 'assistant', content: finalPrompt });
+      void persistMessage({ role: 'assistant', content: finalPrompt }).catch((error) => console.error('Failed to save command:', error));
       const imgUrl = getPollinationsUrl(finalPrompt);
       const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
       setTimeout(() => {
-        updateMessage(imgId, { content: `![Image](${imgUrl})`, loadingText: undefined });
+        const content = `![Image](${imgUrl})`;
+        updateMessage(imgId, { content, loadingText: undefined });
+        void persistMessage({ role: 'assistant', content }).catch((error) => console.error('Failed to save generated image:', error));
       }, 500);
     } else if (cmd.key === '/gemini-image') {
       const prompt = text.slice(cmd.key.length).trim();
@@ -180,6 +211,7 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
       const contextPrompt = prompt || lastUserMsg?.content || '';
       const finalPrompt = formatImagePrompt(contextPrompt, messages);
       append({ role: 'user', content: text });
+      void persistMessage({ role: 'user', content: text }).catch((error) => console.error('Failed to save command:', error));
       const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
       generateImage('/api/gemini', finalPrompt, imgId);
     } else if (cmd.key === '/hugging-face') {
@@ -188,6 +220,7 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
       const contextPrompt = prompt || lastUserMsg?.content || '';
       const finalPrompt = formatImagePrompt(contextPrompt, messages);
       append({ role: 'user', content: text });
+      void persistMessage({ role: 'user', content: text }).catch((error) => console.error('Failed to save command:', error));
       const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
       generateImage('/api/huggingface', finalPrompt, imgId);
     }
@@ -201,7 +234,9 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
     const imgUrl = getPollinationsUrl(prompt);
     const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
     setTimeout(() => {
-      updateMessage(imgId, { content: `![Image](${imgUrl})`, loadingText: undefined });
+      const content = `![Image](${imgUrl})`;
+      updateMessage(imgId, { content, loadingText: undefined });
+      void persistMessage({ role: 'assistant', content }).catch((error) => console.error('Failed to save generated image:', error));
     }, 500);
   };
 
@@ -238,14 +273,16 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
         throw new Error((data as { error?: string }).error || `HTTP ${res.status}`);
       }
       const { mimeType, data: imageData } = data as { mimeType: string; data: string };
-      updateMessage(messageId, { content: `![Image](data:${mimeType};base64,${imageData})`, loadingText: undefined });
+      const content = `![Image](data:${mimeType};base64,${imageData})`;
+      updateMessage(messageId, { content, loadingText: undefined });
+      await persistMessage({ role: 'assistant', content });
     } catch (err) {
       const reason = err instanceof Error ? err.message : 'Unknown error';
       updateMessage(messageId, { content: `Error: ${reason}`, loadingText: undefined });
     } finally {
       setGeminiLoading(false);
     }
-  }, [updateMessage]);
+  }, [persistMessage, updateMessage]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -265,38 +302,103 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-5xl mx-auto bg-white dark:bg-[#0d0d15]">
+    <div className="flex h-screen w-full max-w-6xl mx-auto bg-white dark:bg-[#0d0d15]">
+      {/* Desktop sidebar: always visible */}
+      <div className="hidden md:flex">
+        <ChatHistorySidebar
+          activeConversationId={conversationId || null}
+          onSelectConversation={onOpenConversation}
+          onNewChat={handleNewChat}
+          onDeleted={onConversationDeleted}
+        />
+      </div>
+
+      {/* Mobile sidebar drawer */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 md:hidden ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <ChatHistorySidebar
+          activeConversationId={conversationId || null}
+          onSelectConversation={(conv) => {
+            setSidebarOpen(false);
+            onOpenConversation(conv);
+          }}
+          onNewChat={() => {
+            setSidebarOpen(false);
+            handleNewChat();
+          }}
+          onDeleted={onConversationDeleted}
+        />
+      </div>
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <div className="flex flex-col flex-1 min-w-0">
       <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#0d0d15]">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen((open) => !open)}
+            className="text-zinc-500 hover:text-green-500 shrink-0 md:hidden"
+            aria-label="Toggle conversation list"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleBack}
-            className="text-zinc-500 hover:text-green-500"
+            className="text-zinc-500 hover:text-green-500 shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{model}</span>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2">
+              <select
+                value={model}
+                onChange={(e) => onModelChange(e.target.value)}
+                className="bg-transparent text-sm font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-green-500 border border-transparent rounded px-1 py-0.5 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700"
+                aria-label="Select model"
+              >
+                {models?.map((m: any) => (
+                  <option key={m.name} value={m.name}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <span className="text-[10px] text-zinc-500">Ollama Model</span>
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <UserMenu />
           <ThemeToggle />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNewChat}
-            className="text-xs"
-          >
-            <Plus className="w-3 h-3 mr-1" />
-            New Chat
-          </Button>
         </div>
       </header>
 
       <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
         <div className="flex flex-col gap-4">
+          {hasMore && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={loadEarlier}
+                disabled={isLoadingEarlier}
+                className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
+              >
+                {isLoadingEarlier && <Loader2 className="w-3 h-3 animate-spin" />}
+                Load earlier messages
+              </button>
+            </div>
+          )}
           {messages.map((m) => (
             <div
               key={m.id}
@@ -390,7 +492,7 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading || isReadingFile}
+                disabled={isLoading || isConversationLoading || isReadingFile}
                 aria-label="Attach image or PDF"
                 className="min-h-[44px] text-zinc-500 hover:text-green-500"
               >
@@ -398,7 +500,7 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
               </Button>
               <Button
                 type="submit"
-                disabled={isLoading || isReadingFile || geminiLoading || (!input.trim() && !attachedImage)}
+              disabled={isLoading || isConversationLoading || isReadingFile || geminiLoading || (!input.trim() && !attachedImage)}
               className="min-h-[44px]"
             >
               {isLoading || geminiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
@@ -406,6 +508,7 @@ export default function ChatView({ model, onBack }: ChatViewProps) {
           </form>
         </div>
       </footer>
+      </div>
     </div>
   );
 }
@@ -429,7 +532,7 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
   }, [addToHistory, toast])
   if (message.role === 'assistant' && message.content.startsWith('![Image]')) {
     const match = message.content.match(/\(([^)]+)\)/);
-    const src = match?.[1] || '';
+    const src = safeUrl(match?.[1]);
     return src ? (
       <img src={src} alt="Generated" className="rounded-lg mb-2 max-w-full h-auto" />
     ) : (
@@ -485,8 +588,12 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
           );
         },
         a({ href, children }) {
+          const safeHref = safeUrl(href);
+          if (!safeHref) {
+            return <span className="text-zinc-500 dark:text-zinc-500">{children}</span>;
+          }
           return (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-green-600 underline hover:text-green-500 dark:text-green-400 dark:hover:text-green-300">
+            <a href={safeHref} target="_blank" rel="noopener noreferrer" className="text-green-600 underline hover:text-green-500 dark:text-green-400 dark:hover:text-green-300">
               {children}
             </a>
           );
@@ -502,6 +609,12 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
         },
         strong({ children }) {
           return <strong className="font-semibold text-zinc-800 dark:text-zinc-100">{children}</strong>;
+        },
+        img({ src, alt }) {
+          const safeSrc = typeof src === 'string' ? safeUrl(src) : undefined;
+          return safeSrc ? (
+            <img src={safeSrc} alt={alt || ''} className="rounded-lg my-2 max-w-full h-auto" />
+          ) : null;
         },
       }}
       >

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EnvHttpProxyAgent, fetch as undiciFetch } from 'undici';
 import { mimeTypeFromBase64, parseHFError } from '@/lib/huggingface';
+import { requireUserId } from '@/lib/db/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -10,6 +11,10 @@ const REQUEST_TIMEOUT_MS = 120_000;
 const proxyAgent = new EnvHttpProxyAgent();
 
 export async function POST(request: NextRequest) {
+  if (!(await requireUserId())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const apiKey = process.env.HF_TOKEN || '';
   const model = process.env.HF_MODEL || '';
   const provider = process.env.HF_PROVIDER || 'nscale';

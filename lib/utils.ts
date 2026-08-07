@@ -8,3 +8,15 @@ export function formatBytes(bytes: number): string {
 export function formatDate(ts?: string): string {
   return ts ? new Date(ts).toLocaleString() : '—'
 }
+
+const ALLOWED_URL_PROTOCOLS = ['http:', 'https:', 'mailto:', '#', '/', 'data:image/'] as const
+
+export function safeUrl(raw: string | undefined | null): string | undefined {
+  if (!raw) return undefined
+  const trimmed = raw.trim()
+  if (trimmed === '') return undefined
+  for (const protocol of ALLOWED_URL_PROTOCOLS) {
+    if (trimmed.startsWith(protocol)) return trimmed
+  }
+  return undefined
+}

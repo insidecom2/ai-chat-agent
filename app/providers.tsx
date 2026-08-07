@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { SessionProvider } from 'next-auth/react'
 import { useTheme } from '@/store/theme'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -12,8 +13,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, [initTheme])
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <SessionProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </SessionProvider>
   )
 }

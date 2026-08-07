@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { formatBytes, formatDate } from '@/lib/utils';
 import ThemeToggle from '@/components/ThemeToggle';
+import UserMenu from '@/components/UserMenu';
 
 interface ModelListViewProps {
   onSelectModel: (model: string) => void;
@@ -23,7 +24,10 @@ export default function ModelListView({ onSelectModel }: ModelListViewProps) {
           </h1>
           <p className="text-xs text-zinc-500">Select a model to start chatting</p>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <UserMenu />
+          <ThemeToggle />
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin space-y-3 pr-2">
