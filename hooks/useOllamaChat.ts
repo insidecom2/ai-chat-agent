@@ -66,6 +66,13 @@ export function useOllamaChat(
     hasInitializedConversationRef.current = true
     previousConversationRef.current = nextConversationId
 
+    if (skipLoadRef.current === nextConversationId) {
+      skipLoadRef.current = null
+      conversationIdRef.current = nextConversationId
+      setIsConversationLoading(false)
+      return
+    }
+
     epochRef.current += 1
     abortRef.current?.abort()
     abortRef.current = null
@@ -82,11 +89,6 @@ export function useOllamaChat(
     }
 
     conversationIdRef.current = nextConversationId
-    if (skipLoadRef.current === nextConversationId) {
-      skipLoadRef.current = null
-      setIsConversationLoading(false)
-      return
-    }
 
     let cancelled = false
     setIsConversationLoading(true)
