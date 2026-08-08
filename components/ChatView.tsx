@@ -280,7 +280,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
       <div className="flex h-[100dvh] min-h-[100dvh] w-full items-center justify-center bg-white dark:bg-[#0d0d15] md:h-screen md:min-h-0">
         <div className="flex flex-col items-center gap-3 text-zinc-500 dark:text-zinc-400" role="status" aria-live="polite">
           <Loader2 className="h-8 w-8 animate-spin text-green-500" />
-          <span className="text-sm">Loading chat…</span>
+          <span className="text-base">Loading chat…</span>
         </div>
       </div>
     );
@@ -350,7 +350,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
               <select
                 value={model}
                 onChange={(e) => onModelChange(e.target.value)}
-                className="bg-transparent text-sm font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-green-500 border border-transparent rounded px-1 py-0.5 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700"
+                className="bg-transparent text-base font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-green-500 border border-transparent rounded px-1 py-0.5 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700"
                 aria-label="Select model"
               >
                 {models?.map((m: any) => (
@@ -504,14 +504,14 @@ function ChatComposer({
                   e.preventDefault();
                   selectCommand(cmd);
                 }}
-                className={`p-3 text-sm cursor-pointer flex justify-between items-center transition-colors ${
+                className={`p-3 text-base cursor-pointer flex justify-between items-center transition-colors ${
                   idx === cmdIdx
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                     : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
                 }`}
               >
                 <span className="font-mono font-medium">{cmd.key}</span>
-                <span className="text-xs opacity-70">{cmd.desc}</span>
+                <span className="text-sm opacity-70">{cmd.desc}</span>
               </div>
             ))}
           </div>
@@ -521,7 +521,7 @@ function ChatComposer({
             {attachedImage && (
               <div className="mb-2 flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-800 dark:bg-zinc-900">
                 <Paperclip className="h-4 w-4 text-green-500" />
-                <span className="flex-1 truncate text-xs text-zinc-600 dark:text-zinc-400">
+                <span className="flex-1 truncate text-sm text-zinc-600 dark:text-zinc-400">
                   {isReadingFile ? 'Reading file…' : attachedImage.name}
                 </span>
                 <button
@@ -544,7 +544,7 @@ function ChatComposer({
               onKeyDown={handleKeyDown}
               placeholder="Type a message…"
               rows={1}
-              className="w-full resize-none p-3 rounded-xl bg-white border border-zinc-200 text-zinc-700 text-sm focus:outline-none focus:border-green-500 transition-colors min-h-[44px] max-h-32 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"
+              className="w-full resize-none p-3 rounded-xl bg-white border border-zinc-200 text-zinc-700 text-base focus:outline-none focus:border-green-500 transition-colors min-h-[44px] max-h-32 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"
             />
           </div>
           <input
@@ -605,7 +605,7 @@ const MessageList = React.memo(function MessageList({
     return (
       <div className="flex min-h-full flex-col items-center justify-center gap-3 text-zinc-500 dark:text-zinc-400" role="status" aria-live="polite">
         <Loader2 className="h-8 w-8 animate-spin text-green-500" />
-        <span className="text-sm">Loading chat history…</span>
+        <span className="text-base">Loading chat history…</span>
       </div>
     );
   }
@@ -618,7 +618,7 @@ const MessageList = React.memo(function MessageList({
             type="button"
             onClick={loadEarlier}
             disabled={isLoadingEarlier}
-            className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
+            className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
           >
             {isLoadingEarlier && <Loader2 className="w-3 h-3 animate-spin" />}
             Load earlier messages
@@ -641,7 +641,7 @@ const MessageList = React.memo(function MessageList({
               {m.role === 'user' ? 'You' : model}
             </span>
             <div
-              className={`max-w-full min-w-0 overflow-hidden break-words [overflow-wrap:anywhere] px-4 py-2 rounded-2xl text-sm leading-relaxed ${
+              className={`max-w-full min-w-0 overflow-hidden break-words [overflow-wrap:anywhere] px-4 py-2 rounded-2xl text-base leading-relaxed ${
                 m.role === 'user'
                   ? 'bg-green-600 text-white rounded-tr-sm dark:bg-green-900 dark:text-green-100'
                   : 'bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-tl-sm dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
@@ -697,7 +697,7 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
 
   if (message.role === 'assistant' && message.loadingText) {
     return (
-      <span className="inline-flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+      <span className="inline-flex items-center gap-2 text-base text-zinc-500 dark:text-zinc-400">
         <Loader2 className="w-4 h-4 animate-spin text-green-500" />
         {message.loadingText}
       </span>
@@ -715,7 +715,7 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
   return (
     <>
       {message.imageName && (
-        <div className="mb-2 flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+        <div className="mb-2 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
           <Paperclip className="h-3 w-3" />
           <span>{message.imageName || 'Attached image'}</span>
         </div>

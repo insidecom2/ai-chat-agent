@@ -42,7 +42,7 @@ export default function ChatHistorySidebar({
         <Button
           variant="outline"
           size="sm"
-          className="w-full justify-center text-xs"
+          className="w-full justify-center text-sm"
           onClick={onNewChat}
         >
           <Plus className="w-3 h-3 mr-1" />
@@ -59,7 +59,7 @@ export default function ChatHistorySidebar({
           )}
 
           {!isLoading && (!conversations || conversations.length === 0) && (
-            <p className="text-xs text-zinc-400 dark:text-zinc-600 text-center py-8">
+            <p className="text-sm text-zinc-400 dark:text-zinc-600 text-center py-8">
               No conversations yet
             </p>
           )}
@@ -68,40 +68,40 @@ export default function ChatHistorySidebar({
             const isActive = conversation.id === activeConversationId;
             const isConfirming = confirmId === conversation.id;
             return (
-              <button
+              <div
                 key={conversation.id}
-                type="button"
-                onClick={() => onSelectConversation(conversation)}
-                className={`group flex flex-col items-start gap-0.5 text-left px-3 py-2 rounded-lg border-b border-zinc-200/70 last:border-b-0 dark:border-zinc-800/70 text-sm transition-colors ${
+                className={`group relative rounded-lg border-b border-zinc-200/70 last:border-b-0 dark:border-zinc-800/70 text-base transition-colors ${
                   isActive
                     ? 'bg-green-600 text-white dark:bg-green-900 dark:text-green-100'
                     : 'text-zinc-700 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:bg-zinc-800'
                 }`}
               >
-                <span className="w-full flex items-center justify-between gap-2">
-                  <span className="truncate flex-1">
+                <button
+                  type="button"
+                  onClick={() => onSelectConversation(conversation)}
+                  className="flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 pr-12 text-left"
+                >
+                  <span className="w-full truncate">
                     {conversation.title || 'Untitled'}
                   </span>
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  <span className={`text-xs ${isActive ? 'text-white/70' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                    {conversation.model} · {formatDate(conversation.updatedAt)}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={isConfirming ? `Confirm delete ${conversation.title || 'conversation'}` : `Delete ${conversation.title || 'conversation'}`}
+                  disabled={deleteMutation.isPending}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(conversation);
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleDelete(conversation);
-                      }
-                    }}
-                    className={`shrink-0 flex items-center gap-1 rounded-md p-1 text-[10px] transition-colors ${
+                    className={`absolute right-2 top-2 flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-1 rounded-md p-2 text-xs transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 ${
                       isConfirming
                         ? 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'
                         : isActive
-                          ? 'text-white/70 opacity-0 group-hover:opacity-100 hover:bg-white/20'
-                          : 'text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-zinc-200 dark:text-zinc-500 dark:hover:bg-zinc-700'
+                          ? 'text-white/70 hover:bg-white/20'
+                          : 'text-zinc-400 hover:bg-zinc-200 dark:text-zinc-500 dark:hover:bg-zinc-700'
                     }`}
                   >
                     {isConfirming ? (
@@ -112,19 +112,15 @@ export default function ChatHistorySidebar({
                     ) : (
                       <Trash2 className="w-3 h-3" />
                     )}
-                  </span>
-                </span>
-                <span className={`text-[10px] ${isActive ? 'text-white/70' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                  {conversation.model} · {formatDate(conversation.updatedAt)}
-                </span>
-              </button>
+                </button>
+              </div>
             );
           })}
         </div>
       </ScrollArea>
 
       {confirmId && (
-        <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-200 dark:border-zinc-800 text-sm text-zinc-500 dark:text-zinc-400">
           <span className="flex items-center gap-1.5">
             <MessageSquare className="w-3 h-3" />
             Delete conversation?
