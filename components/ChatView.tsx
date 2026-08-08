@@ -3,9 +3,9 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ChatAttachment, Message, useOllamaChat } from '@/hooks/useOllamaChat';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu } from 'lucide-react';
+import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Copy, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu } from 'lucide-react';
 import { COMMANDS, Command } from '@/lib/commands';
-import { formatImagePrompt, getPollinationsUrl, extractImagePrompt } from '@/lib/image-utils';
+import { formatImagePrompt, getLatestImagePrompt, getPollinationsUrl, extractImagePrompt, limitImagePrompt } from '@/lib/image-utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useToast } from '@/components/ui/toast';
@@ -170,13 +170,21 @@ export default function ChatView({ model, conversationId, onConversationChange, 
   const executeCommand = (text: string, cmd: Command) => {
     if (geminiLoading || isLoading || isConversationLoading) return;
 
+    const explicitPrompt = text.slice(cmd.key.length).trim();
+    const sourcePrompt = explicitPrompt || getLatestImagePrompt(messages);
+    append({ role: 'user', content: text });
+    void persistMessage({ role: 'user', content: text }).catch((error) => console.error('Failed to save command:', error));
+
+    if (!sourcePrompt) {
+      const noPromptMessage = 'ไม่พบ prompt';
+      append({ role: 'assistant', content: noPromptMessage });
+      void persistMessage({ role: 'assistant', content: noPromptMessage }).catch((error) => console.error('Failed to save command response:', error));
+      return;
+    }
+
+    const finalPrompt = formatImagePrompt(sourcePrompt, []);
+
     if (cmd.key === '/gen-image') {
-      const prompt = text.slice(cmd.key.length).trim();
-      const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
-      const contextPrompt = prompt || lastUserMsg?.content || '';
-      const finalPrompt = formatImagePrompt(contextPrompt, messages);
-      append({ role: 'user', content: text });
-      void persistMessage({ role: 'user', content: text }).catch((error) => console.error('Failed to save command:', error));
       append({ role: 'assistant', content: finalPrompt });
       void persistMessage({ role: 'assistant', content: finalPrompt }).catch((error) => console.error('Failed to save command:', error));
       const imgUrl = getPollinationsUrl(finalPrompt);
@@ -187,21 +195,9 @@ export default function ChatView({ model, conversationId, onConversationChange, 
         void persistMessage({ role: 'assistant', content }).catch((error) => console.error('Failed to save generated image:', error));
       }, 500);
     } else if (cmd.key === '/gemini-image') {
-      const prompt = text.slice(cmd.key.length).trim();
-      const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
-      const contextPrompt = prompt || lastUserMsg?.content || '';
-      const finalPrompt = formatImagePrompt(contextPrompt, messages);
-      append({ role: 'user', content: text });
-      void persistMessage({ role: 'user', content: text }).catch((error) => console.error('Failed to save command:', error));
       const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
       generateImage('/api/gemini', finalPrompt, imgId);
     } else if (cmd.key === '/hugging-face') {
-      const prompt = text.slice(cmd.key.length).trim();
-      const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
-      const contextPrompt = prompt || lastUserMsg?.content || '';
-      const finalPrompt = formatImagePrompt(contextPrompt, messages);
-      append({ role: 'user', content: text });
-      void persistMessage({ role: 'user', content: text }).catch((error) => console.error('Failed to save command:', error));
       const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
       generateImage('/api/huggingface', finalPrompt, imgId);
     }
@@ -234,9 +230,9 @@ export default function ChatView({ model, conversationId, onConversationChange, 
         throw new Error((data as { error?: string }).error || `HTTP ${res.status}`);
       }
       const { mimeType, data: imageData } = data as { mimeType: string; data: string };
-      const content = `![Image](data:${mimeType};base64,${imageData})`;
-      updateMessage(messageId, { content, loadingText: undefined });
-      await persistMessage({ role: 'assistant', content });
+      const image = `data:${mimeType};base64,${imageData}`;
+      updateMessage(messageId, { content: 'Generated image', image, loadingText: undefined });
+      await persistMessage({ role: 'assistant', content: 'Generated image', image });
     } catch (err) {
       const reason = err instanceof Error ? err.message : 'Unknown error';
       updateMessage(messageId, { content: `Error: ${reason}`, loadingText: undefined });
@@ -250,7 +246,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
       toast('No image prompt found in this response.');
       return;
     }
-    const imgUrl = getPollinationsUrl(prompt);
+    const imgUrl = getPollinationsUrl(limitImagePrompt(prompt));
     const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
     setTimeout(() => {
       const content = `![Image](${imgUrl})`;
@@ -266,7 +262,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
       return;
     }
     const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
-    generateImage('/api/gemini', prompt, imgId);
+    generateImage('/api/gemini', limitImagePrompt(prompt), imgId);
   }, [append, generateImage, geminiLoading, toast]);
 
   const handleHuggingFaceImage = useCallback((prompt: string) => {
@@ -276,7 +272,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
       return;
     }
     const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
-    generateImage('/api/huggingface', prompt, imgId);
+    generateImage('/api/huggingface', limitImagePrompt(prompt), imgId);
   }, [append, generateImage, geminiLoading, toast]);
 
   if (showInitialLoading) {
@@ -635,7 +631,9 @@ const MessageList = React.memo(function MessageList({
           className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
         >
           <div
-            className={`max-w-[85%] min-w-0 flex flex-col ${
+            className={`min-w-0 flex flex-col ${
+              m.role === 'assistant' ? 'max-w-full' : 'max-w-[85%]'
+            } ${
               m.role === 'user' ? 'items-end' : 'items-start'
             }`}
           >
@@ -643,7 +641,7 @@ const MessageList = React.memo(function MessageList({
               {m.role === 'user' ? 'You' : model}
             </span>
             <div
-              className={`px-4 py-2 rounded-2xl text-sm leading-relaxed ${
+              className={`max-w-full min-w-0 overflow-hidden break-words [overflow-wrap:anywhere] px-4 py-2 rounded-2xl text-sm leading-relaxed ${
                 m.role === 'user'
                   ? 'bg-green-600 text-white rounded-tr-sm dark:bg-green-900 dark:text-green-100'
                   : 'bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-tl-sm dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
@@ -680,6 +678,13 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
     toast('Copied!')
     setTimeout(() => setCopiedId(null), 2000)
   }, [addToHistory, toast])
+  if (message.role === 'assistant' && message.image) {
+    const src = safeUrl(message.image);
+    return src ? (
+      <img src={src} alt="Generated" className="rounded-lg mb-2 max-w-full h-auto" />
+    ) : null;
+  }
+
   if (message.role === 'assistant' && message.content.startsWith('![Image]')) {
     const match = message.content.match(/\(([^)]+)\)/);
     const src = safeUrl(match?.[1]);
@@ -743,9 +748,16 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
             return <span className="text-zinc-500 dark:text-zinc-500">{children}</span>;
           }
           return (
-            <a href={safeHref} target="_blank" rel="noopener noreferrer" className="text-green-600 underline hover:text-green-500 dark:text-green-400 dark:hover:text-green-300">
+            <a href={safeHref} target="_blank" rel="noopener noreferrer" className="break-words [overflow-wrap:anywhere] text-green-600 underline hover:text-green-500 dark:text-green-400 dark:hover:text-green-300">
               {children}
             </a>
+          );
+        },
+        table({ children }) {
+          return (
+            <div className="my-2 max-w-full overflow-x-auto">
+              <table className="min-w-max">{children}</table>
+            </div>
           );
         },
         ul({ children }) {
@@ -770,6 +782,19 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
       >
         {replaceLatexSymbols(message.content)}
       </ReactMarkdown>
+      {message.role === 'user' && (
+        <div className="mt-1 flex justify-end">
+          <button
+            type="button"
+            onClick={() => handleCopy(message.content, String(message.id))}
+            title="Copy message"
+            aria-label="Copy message"
+            className="rounded p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white"
+          >
+            {copiedId === String(message.id) ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+      )}
       {imagePrompt && (
         <div className="mt-2 flex flex-wrap gap-2">
           <button

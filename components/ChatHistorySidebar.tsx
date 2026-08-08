@@ -72,7 +72,7 @@ export default function ChatHistorySidebar({
                 key={conversation.id}
                 type="button"
                 onClick={() => onSelectConversation(conversation)}
-                className={`group flex flex-col items-start gap-0.5 text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                className={`group flex flex-col items-start gap-0.5 text-left px-3 py-2 rounded-lg border-b border-zinc-200/70 last:border-b-0 dark:border-zinc-800/70 text-sm transition-colors ${
                   isActive
                     ? 'bg-green-600 text-white dark:bg-green-900 dark:text-green-100'
                     : 'text-zinc-700 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:bg-zinc-800'

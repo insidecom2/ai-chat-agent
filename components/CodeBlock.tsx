@@ -93,7 +93,7 @@ export default function CodeBlock({
 
   if (!language) {
     return (
-      <pre className="bg-zinc-950 border border-zinc-700 rounded-lg p-4 my-2 overflow-x-auto">
+      <pre className="max-w-full overflow-x-auto bg-zinc-950 border border-zinc-700 rounded-lg p-4 my-2">
         <code className="text-zinc-100">{code}</code>
       </pre>
     )
@@ -105,9 +105,12 @@ export default function CodeBlock({
       style={dracula}
       customStyle={{
         margin: '0.5rem 0',
+        maxWidth: '100%',
+        overflowX: 'auto',
         borderRadius: '0.5rem',
         fontSize: '0.8125rem',
         lineHeight: '1.5',
+        whiteSpace: 'pre',
       }}
     >
       {code}

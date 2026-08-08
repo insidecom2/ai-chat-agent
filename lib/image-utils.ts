@@ -1,3 +1,12 @@
+export const MAX_IMAGE_PROMPT_LENGTH = 12_000
+
+export function limitImagePrompt(prompt: string): string {
+  const cleaned = prompt.trim()
+  return cleaned.length > MAX_IMAGE_PROMPT_LENGTH
+    ? cleaned.slice(0, MAX_IMAGE_PROMPT_LENGTH)
+    : cleaned
+}
+
 export function formatImagePrompt(
   prompt: string,
   _history: { role: string; content: string }[]
@@ -15,7 +24,7 @@ export function formatImagePrompt(
     }
   }
 
-  return cleaned || 'A beautiful landscape'
+  return limitImagePrompt(cleaned) || 'A beautiful landscape'
 }
 
 export interface PollinationsOptions {
@@ -48,6 +57,22 @@ export function extractImagePrompt(content: string): string | null {
   if (block) {
     const fromBlock = findImagePrompt(tryParseJson(block))
     if (fromBlock) return fromBlock
+  }
+
+  return null
+}
+
+export function getLatestImagePrompt(
+  messages: { role: string; content: string }[]
+): string | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]
+    const content = message.content.trim()
+    if (!content || content.startsWith('/')) continue
+
+    const extracted = extractImagePrompt(content)
+    if (extracted) return extracted
+    if (message.role === 'user') return content
   }
 
   return null

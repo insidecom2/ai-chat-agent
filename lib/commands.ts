@@ -1,7 +1,7 @@
 export const COMMANDS = [
   {
     key: '/gen-image',
-    desc: 'Generate image from last Ollama response',
+    desc: 'Generate image from the latest prompt',
   },
   {
     key: '/gemini-image',

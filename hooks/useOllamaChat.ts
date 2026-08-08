@@ -8,6 +8,7 @@ import {
   getConversation,
   updateConversation,
 } from '@/lib/api/conversations'
+import { shouldIncludeImageInHistory } from '@/lib/chat-history'
 
 export interface Message {
   id: string
@@ -215,7 +216,7 @@ export function useOllamaChat(
       .map((m) => ({
         role: m.role,
         content: sanitizeHistoryContent(m.content),
-        ...(m.image && !m.documentText ? { images: [getBase64Image(m.image)] } : {}),
+        ...(shouldIncludeImageInHistory(m) ? { images: [getBase64Image(m.image!)] } : {}),
         ...(m.documentText
           ? { content: withDocumentBoundary(m.content, m.documentText) }
           : {}),

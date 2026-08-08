@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { EnvHttpProxyAgent, fetch as undiciFetch } from 'undici';
 import { mimeTypeFromBase64, parseHFError } from '@/lib/huggingface';
 import { requireUserId } from '@/lib/db/auth';
+import { limitImagePrompt } from '@/lib/image-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
 
-  const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+  const prompt = typeof body.prompt === 'string' ? limitImagePrompt(body.prompt) : '';
   if (!prompt) {
     return NextResponse.json({ error: 'A prompt is required.' }, { status: 400 });
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractGeminiImage, parseGeminiError } from '@/lib/gemini';
 import { requireUserId } from '@/lib/db/auth';
+import { limitImagePrompt } from '@/lib/image-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
 
-  const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+  const prompt = typeof body.prompt === 'string' ? limitImagePrompt(body.prompt) : '';
   if (!prompt) {
     return NextResponse.json({ error: 'A prompt is required.' }, { status: 400 });
   }

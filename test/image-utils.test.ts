@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { formatImagePrompt, getPollinationsUrl, extractImagePrompt } from '@/lib/image-utils';
+import { formatImagePrompt, getLatestImagePrompt, getPollinationsUrl, extractImagePrompt, limitImagePrompt, MAX_IMAGE_PROMPT_LENGTH } from '@/lib/image-utils';
+
+describe('limitImagePrompt', () => {
+  it('trims prompts to a safe size for image APIs', () => {
+    const prompt = 'x'.repeat(MAX_IMAGE_PROMPT_LENGTH + 100);
+    expect(limitImagePrompt(prompt)).toHaveLength(MAX_IMAGE_PROMPT_LENGTH);
+  });
+
+  it('trims surrounding whitespace from short prompts', () => {
+    expect(limitImagePrompt('  sunset  ')).toBe('sunset');
+  });
+});
 
 describe('formatImagePrompt', () => {
   it('returns the prompt unchanged when no special syntax', () => {
@@ -120,5 +131,29 @@ describe('extractImagePrompt', () => {
 
   it('returns null for empty content', () => {
     expect(extractImagePrompt('')).toBeNull();
+  });
+});
+
+describe('getLatestImagePrompt', () => {
+  it('uses the latest user prompt and ignores image commands', () => {
+    expect(getLatestImagePrompt([
+      { role: 'user', content: 'a red dragon' },
+      { role: 'assistant', content: 'Sure, I can help.' },
+      { role: 'user', content: '/gemini-image' },
+    ])).toBe('a red dragon');
+  });
+
+  it('extracts a structured prompt from the latest message', () => {
+    expect(getLatestImagePrompt([
+      { role: 'user', content: 'make an image' },
+      { role: 'assistant', content: '{"prompt":"a blue dragon"}' },
+    ])).toBe('a blue dragon');
+  });
+
+  it('returns null when no prompt exists', () => {
+    expect(getLatestImagePrompt([
+      { role: 'assistant', content: 'Welcome!' },
+      { role: 'user', content: '/gen-image' },
+    ])).toBeNull();
   });
 });
