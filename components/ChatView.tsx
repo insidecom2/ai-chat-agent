@@ -302,7 +302,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
   };
 
   return (
-    <div className="flex h-screen w-full max-w-6xl mx-auto bg-white dark:bg-[#0d0d15]">
+    <div className="flex h-[100dvh] min-h-[100dvh] w-full max-w-6xl mx-auto overflow-hidden bg-white dark:bg-[#0d0d15] md:h-screen md:min-h-0">
       {/* Desktop sidebar: always visible */}
       <div className="hidden md:flex">
         <ChatHistorySidebar
@@ -340,8 +340,8 @@ export default function ChatView({ model, conversationId, onConversationChange, 
         />
       )}
 
-      <div className="flex flex-col flex-1 min-w-0">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#0d0d15]">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col">
+      <header className="fixed inset-x-0 top-0 z-30 flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-[#0d0d15] md:static">
         <div className="flex items-center gap-3 min-w-0">
           <Button
             variant="ghost"
@@ -384,7 +384,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
         </div>
       </header>
 
-      <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
+      <ScrollArea className="min-h-0 flex-1 p-4 pt-[76px] pb-[116px] md:p-4" viewportRef={scrollRef}>
         <div className="flex flex-col gap-4">
           {hasMore && (
             <div className="flex justify-center">
@@ -427,7 +427,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
         </div>
       </ScrollArea>
 
-      <footer className="p-4 border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#0d0d15] relative">
+      <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] dark:border-zinc-800 dark:bg-[#0d0d15] md:static md:pb-4">
         <div className="max-w-5xl mx-auto relative">
           {input.startsWith('/') &&
             !/\s/.test(input) &&
