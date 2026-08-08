@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ChatAttachment, useOllamaChat } from '@/hooks/useOllamaChat';
+import { ChatAttachment, Message, useOllamaChat } from '@/hooks/useOllamaChat';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu } from 'lucide-react';
@@ -20,6 +20,8 @@ import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import UserMenu from '@/components/UserMenu';
 import type { Conversation } from '@/lib/db/types';
 
+type SelectedAttachment = ChatAttachment & { dataUrl?: string };
+
 interface ChatViewProps {
   model: string;
   conversationId?: string | null;
@@ -32,11 +34,9 @@ interface ChatViewProps {
 }
 
 export default function ChatView({ model, conversationId, onConversationChange, onBack, onModelChange, onNewChat, onOpenConversation, onConversationDeleted }: ChatViewProps) {
-  const { data: models } = useModels();
+  const { data: models, isLoading: isModelsLoading } = useModels();
   const {
     messages,
-    input,
-    setInput,
     sendMessage,
     append,
     updateMessage,
@@ -49,20 +49,53 @@ export default function ChatView({ model, conversationId, onConversationChange, 
     reset,
   } = useOllamaChat(model, conversationId, onConversationChange);
   const { toast } = useToast();
-  const [cmdIdx, setCmdIdx] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [attachedImage, setAttachedImage] = useState<ChatAttachment & { dataUrl?: string } | null>(null);
+  const [showInitialLoading, setShowInitialLoading] = useState(true);
+  const [attachedImage, setAttachedImage] = useState<SelectedAttachment | null>(null);
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [geminiLoading, setGeminiLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollFrameRef = useRef<number | null>(null);
+  const shouldStickToBottomRef = useRef(true);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!isModelsLoading && !isConversationLoading) {
+      setShowInitialLoading(false);
     }
+  }, [isConversationLoading, isModelsLoading]);
+
+  useEffect(() => {
+    if (!scrollRef.current || !shouldStickToBottomRef.current) return;
+
+    if (scrollFrameRef.current !== null) {
+      cancelAnimationFrame(scrollFrameRef.current);
+    }
+    scrollFrameRef.current = requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+      scrollFrameRef.current = null;
+    });
+
+    return () => {
+      if (scrollFrameRef.current !== null) {
+        cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
+    };
   }, [messages]);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const viewport = e.currentTarget;
+    const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const shouldStick = distanceFromBottom < 96;
+    shouldStickToBottomRef.current = shouldStick;
+
+    if (!shouldStick && scrollFrameRef.current !== null) {
+      cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+    }
+  }, []);
 
   const handleBack = () => {
     onBack();
@@ -134,60 +167,8 @@ export default function ChatView({ model, conversationId, onConversationChange, 
     documentText: attachedImage.documentText,
   } : undefined;
 
-  const autoResize = (el: HTMLTextAreaElement) => {
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    const commandName = input.trim().split(/\s+/)[0];
-    const showCommands = input.startsWith('/') &&
-      !/\s/.test(input) &&
-      COMMANDS.some((cmd) => cmd.key.startsWith(commandName));
-
-    if (showCommands) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setCmdIdx((prev) => (prev + 1) % COMMANDS.length);
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setCmdIdx((prev) => (prev - 1 + COMMANDS.length) % COMMANDS.length);
-        return;
-      }
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        selectCommand(COMMANDS[cmdIdx]);
-        return;
-      }
-      if (e.key === 'Escape') {
-        setInput('');
-        return;
-      }
-    }
-
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      const command = COMMANDS.find((cmd) => cmd.key === commandName);
-      if (command) {
-        executeCommand(input, command);
-      } else {
-        sendMessage(input, getAttachment());
-        setAttachedImage(null);
-      }
-    }
-  };
-
-  const selectCommand = (cmd: Command) => {
-    setInput(`${cmd.key} `);
-    setCmdIdx(0);
-    requestAnimationFrame(() => textareaRef.current?.focus());
-  };
-
   const executeCommand = (text: string, cmd: Command) => {
     if (geminiLoading || isLoading || isConversationLoading) return;
-    setInput('');
 
     if (cmd.key === '/gen-image') {
       const prompt = text.slice(cmd.key.length).trim();
@@ -226,38 +207,18 @@ export default function ChatView({ model, conversationId, onConversationChange, 
     }
   };
 
-  const handleGenImage = (prompt: string) => {
-    if (!prompt.trim()) {
-      toast('No image prompt found in this response.');
-      return;
+  const handleComposerSubmit = (text: string) => {
+    const commandName = text.trim().split(/\s+/)[0];
+    const command = COMMANDS.find((cmd) => cmd.key === commandName);
+    if (command) {
+      if (geminiLoading || isLoading || isConversationLoading) return false;
+      executeCommand(text, command);
+      return true;
     }
-    const imgUrl = getPollinationsUrl(prompt);
-    const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
-    setTimeout(() => {
-      const content = `![Image](${imgUrl})`;
-      updateMessage(imgId, { content, loadingText: undefined });
-      void persistMessage({ role: 'assistant', content }).catch((error) => console.error('Failed to save generated image:', error));
-    }, 500);
-  };
 
-  const handleGeminiImage = (prompt: string) => {
-    if (geminiLoading) return;
-    if (!prompt.trim()) {
-      toast('No image prompt found in this response.');
-      return;
-    }
-    const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
-    generateImage('/api/gemini', prompt, imgId);
-  };
-
-  const handleHuggingFaceImage = (prompt: string) => {
-    if (geminiLoading) return;
-    if (!prompt.trim()) {
-      toast('No image prompt found in this response.');
-      return;
-    }
-    const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
-    generateImage('/api/huggingface', prompt, imgId);
+    sendMessage(text, getAttachment());
+    setAttachedImage(null);
+    return true;
   };
 
   const generateImage = useCallback(async (apiPath: string, prompt: string, messageId: string) => {
@@ -284,22 +245,50 @@ export default function ChatView({ model, conversationId, onConversationChange, 
     }
   }, [persistMessage, updateMessage]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-    autoResize(e.target);
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const commandName = input.trim().split(/\s+/)[0];
-    const command = COMMANDS.find((cmd) => cmd.key === commandName);
-    if (command) {
-      executeCommand(input, command);
-    } else {
-      sendMessage(input, getAttachment());
-      setAttachedImage(null);
+  const handleGenImage = useCallback((prompt: string) => {
+    if (!prompt.trim()) {
+      toast('No image prompt found in this response.');
+      return;
     }
-  };
+    const imgUrl = getPollinationsUrl(prompt);
+    const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
+    setTimeout(() => {
+      const content = `![Image](${imgUrl})`;
+      updateMessage(imgId, { content, loadingText: undefined });
+      void persistMessage({ role: 'assistant', content }).catch((error) => console.error('Failed to save generated image:', error));
+    }, 500);
+  }, [append, persistMessage, toast, updateMessage]);
+
+  const handleGeminiImage = useCallback((prompt: string) => {
+    if (geminiLoading) return;
+    if (!prompt.trim()) {
+      toast('No image prompt found in this response.');
+      return;
+    }
+    const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
+    generateImage('/api/gemini', prompt, imgId);
+  }, [append, generateImage, geminiLoading, toast]);
+
+  const handleHuggingFaceImage = useCallback((prompt: string) => {
+    if (geminiLoading) return;
+    if (!prompt.trim()) {
+      toast('No image prompt found in this response.');
+      return;
+    }
+    const imgId = append({ role: 'assistant', content: '', loadingText: 'กำลังสร้างรูปภาพ…' });
+    generateImage('/api/huggingface', prompt, imgId);
+  }, [append, generateImage, geminiLoading, toast]);
+
+  if (showInitialLoading) {
+    return (
+      <div className="flex h-[100dvh] min-h-[100dvh] w-full items-center justify-center bg-white dark:bg-[#0d0d15] md:h-screen md:min-h-0">
+        <div className="flex flex-col items-center gap-3 text-zinc-500 dark:text-zinc-400" role="status" aria-live="polite">
+          <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+          <span className="text-sm">Loading chat…</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[100dvh] min-h-[100dvh] w-full max-w-6xl mx-auto overflow-hidden bg-white dark:bg-[#0d0d15] md:h-screen md:min-h-0">
@@ -384,134 +373,295 @@ export default function ChatView({ model, conversationId, onConversationChange, 
         </div>
       </header>
 
-      <ScrollArea className="min-h-0 flex-1 p-4 pt-[76px] pb-[116px] md:p-4" viewportRef={scrollRef}>
-        <div className="flex flex-col gap-4">
-          {hasMore && (
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={loadEarlier}
-                disabled={isLoadingEarlier}
-                className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
-              >
-                {isLoadingEarlier && <Loader2 className="w-3 h-3 animate-spin" />}
-                Load earlier messages
-              </button>
-            </div>
-          )}
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[85%] min-w-0 flex flex-col ${
-                  m.role === 'user' ? 'items-end' : 'items-start'
-                }`}
-              >
-                <span className="text-[10px] text-zinc-500 mb-1 px-1">
-                  {m.role === 'user' ? 'You' : model}
-                </span>
-                <div
-                  className={`px-4 py-2 rounded-2xl text-sm leading-relaxed ${
-                    m.role === 'user'
-                      ? 'bg-green-600 text-white rounded-tr-sm dark:bg-green-900 dark:text-green-100'
-                      : 'bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-tl-sm dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
-                  }`}
-                >
-                  <MessageContent message={m} onGenImage={handleGenImage} onGeminiImage={handleGeminiImage} onHuggingFaceImage={handleHuggingFaceImage} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <ScrollArea
+        className="min-h-0 flex-1 p-4 pt-[76px] pb-[116px] md:p-4"
+        viewportRef={scrollRef}
+        onScroll={handleScroll}
+      >
+        <MessageList
+          messages={messages}
+          model={model}
+          isConversationLoading={isConversationLoading}
+          hasMore={hasMore}
+          isLoadingEarlier={isLoadingEarlier}
+          loadEarlier={loadEarlier}
+          onGenImage={handleGenImage}
+          onGeminiImage={handleGeminiImage}
+          onHuggingFaceImage={handleHuggingFaceImage}
+        />
       </ScrollArea>
 
-      <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] dark:border-zinc-800 dark:bg-[#0d0d15] md:static md:pb-4">
-        <div className="max-w-5xl mx-auto relative">
-          {input.startsWith('/') &&
-            !/\s/.test(input) &&
-            COMMANDS.some((cmd) => cmd.key.startsWith(input.trim())) && (
-            <div className="absolute bottom-full left-0 w-full mb-2 bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-2xl z-50 dark:bg-zinc-900 dark:border-zinc-800">
-              {COMMANDS.map((cmd, idx) => (
-                <div
-                  key={cmd.key}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    selectCommand(cmd);
-                  }}
-                  className={`p-3 text-sm cursor-pointer flex justify-between items-center transition-colors ${
-                    idx === cmdIdx
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                  }`}
-                >
-                  <span className="font-mono font-medium">{cmd.key}</span>
-                  <span className="text-xs opacity-70">{cmd.desc}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <form onSubmit={handleFormSubmit} className="flex gap-2 items-start">
-            <div className="flex-1 relative">
-              {attachedImage && (
-                <div className="mb-2 flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-800 dark:bg-zinc-900">
-                  <Paperclip className="h-4 w-4 text-green-500" />
-                  <span className="flex-1 truncate text-xs text-zinc-600 dark:text-zinc-400">
-                    {isReadingFile ? 'Reading file…' : attachedImage.name}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setAttachedImage(null)}
-                    className="rounded p-1 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-                    aria-label="Remove attached image"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Type a message…"
-                rows={1}
-                className="w-full resize-none p-3 rounded-xl bg-white border border-zinc-200 text-zinc-700 text-sm focus:outline-none focus:border-green-500 transition-colors min-h-[44px] max-h-32 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"
-              />
-            </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,.pdf,application/pdf"
-                onChange={handleImageSelect}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading || isConversationLoading || isReadingFile}
-                aria-label="Attach image or PDF"
-                className="min-h-[44px] text-zinc-500 hover:text-green-500"
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
-              <Button
-                type="submit"
-              disabled={isLoading || isConversationLoading || isReadingFile || geminiLoading || (!input.trim() && !attachedImage)}
-              className="min-h-[44px]"
-            >
-              {isLoading || geminiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-            </Button>
-          </form>
-        </div>
-      </footer>
+      <ChatComposer
+        key={`${model}:${conversationId || 'new'}`}
+        attachedImage={attachedImage}
+        isLoading={isLoading}
+        isConversationLoading={isConversationLoading}
+        isReadingFile={isReadingFile}
+        geminiLoading={geminiLoading}
+        onFileSelect={handleImageSelect}
+        onRemoveAttachment={() => setAttachedImage(null)}
+        onSubmit={handleComposerSubmit}
+      />
       </div>
     </div>
   );
 }
+
+interface ChatComposerProps {
+  attachedImage: SelectedAttachment | null;
+  isLoading: boolean;
+  isConversationLoading: boolean;
+  isReadingFile: boolean;
+  geminiLoading: boolean;
+  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveAttachment: () => void;
+  onSubmit: (text: string) => boolean | void;
+}
+
+function ChatComposer({
+  attachedImage,
+  isLoading,
+  isConversationLoading,
+  isReadingFile,
+  geminiLoading,
+  onFileSelect,
+  onRemoveAttachment,
+  onSubmit,
+}: ChatComposerProps) {
+  const [input, setInput] = useState('');
+  const [cmdIdx, setCmdIdx] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const autoResize = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  };
+
+  const clearInput = () => {
+    setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+  };
+
+  const selectCommand = (cmd: Command) => {
+    setInput(`${cmd.key} `);
+    setCmdIdx(0);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  };
+
+  const submit = () => {
+    if (!input.trim() && !attachedImage) return;
+    if (onSubmit(input) === false) return;
+    clearInput();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const commandName = input.trim().split(/\s+/)[0];
+    const showCommands = input.startsWith('/') &&
+      !/\s/.test(input) &&
+      COMMANDS.some((cmd) => cmd.key.startsWith(commandName));
+
+    if (showCommands) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setCmdIdx((prev) => (prev + 1) % COMMANDS.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setCmdIdx((prev) => (prev - 1 + COMMANDS.length) % COMMANDS.length);
+        return;
+      }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        selectCommand(COMMANDS[cmdIdx]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        clearInput();
+        return;
+      }
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submit();
+  };
+
+  return (
+    <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] dark:border-zinc-800 dark:bg-[#0d0d15] md:static md:pb-4">
+      <div className="max-w-5xl mx-auto relative">
+        {input.startsWith('/') &&
+          !/\s/.test(input) &&
+          COMMANDS.some((cmd) => cmd.key.startsWith(input.trim())) && (
+          <div className="absolute bottom-full left-0 w-full mb-2 bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-2xl z-50 dark:bg-zinc-900 dark:border-zinc-800">
+            {COMMANDS.map((cmd, idx) => (
+              <div
+                key={cmd.key}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  selectCommand(cmd);
+                }}
+                className={`p-3 text-sm cursor-pointer flex justify-between items-center transition-colors ${
+                  idx === cmdIdx
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                }`}
+              >
+                <span className="font-mono font-medium">{cmd.key}</span>
+                <span className="text-xs opacity-70">{cmd.desc}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <form onSubmit={handleFormSubmit} className="flex gap-2 items-start">
+          <div className="flex-1 relative">
+            {attachedImage && (
+              <div className="mb-2 flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-800 dark:bg-zinc-900">
+                <Paperclip className="h-4 w-4 text-green-500" />
+                <span className="flex-1 truncate text-xs text-zinc-600 dark:text-zinc-400">
+                  {isReadingFile ? 'Reading file…' : attachedImage.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={onRemoveAttachment}
+                  className="rounded p-1 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                  aria-label="Remove attached image"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                autoResize(e.target);
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message…"
+              rows={1}
+              className="w-full resize-none p-3 rounded-xl bg-white border border-zinc-200 text-zinc-700 text-sm focus:outline-none focus:border-green-500 transition-colors min-h-[44px] max-h-32 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"
+            />
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.pdf,application/pdf"
+            onChange={onFileSelect}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading || isConversationLoading || isReadingFile}
+            aria-label="Attach image or PDF"
+            className="min-h-[44px] text-zinc-500 hover:text-green-500"
+          >
+            <Paperclip className="w-4 h-4" />
+          </Button>
+          <Button
+            type="submit"
+            disabled={isLoading || isConversationLoading || isReadingFile || geminiLoading || (!input.trim() && !attachedImage)}
+            className="min-h-[44px]"
+          >
+            {isLoading || geminiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+          </Button>
+        </form>
+      </div>
+    </footer>
+  );
+}
+
+interface MessageListProps {
+  messages: Message[];
+  model: string;
+  isConversationLoading: boolean;
+  hasMore: boolean;
+  isLoadingEarlier: boolean;
+  loadEarlier: () => void;
+  onGenImage: (prompt: string) => void;
+  onGeminiImage: (prompt: string) => void;
+  onHuggingFaceImage: (prompt: string) => void;
+}
+
+const MessageList = React.memo(function MessageList({
+  messages,
+  model,
+  isConversationLoading,
+  hasMore,
+  isLoadingEarlier,
+  loadEarlier,
+  onGenImage,
+  onGeminiImage,
+  onHuggingFaceImage,
+}: MessageListProps) {
+  if (isConversationLoading) {
+    return (
+      <div className="flex min-h-full flex-col items-center justify-center gap-3 text-zinc-500 dark:text-zinc-400" role="status" aria-live="polite">
+        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+        <span className="text-sm">Loading chat history…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {hasMore && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={loadEarlier}
+            disabled={isLoadingEarlier}
+            className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
+          >
+            {isLoadingEarlier && <Loader2 className="w-3 h-3 animate-spin" />}
+            Load earlier messages
+          </button>
+        </div>
+      )}
+      {messages.map((m) => (
+        <div
+          key={m.id}
+          className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+        >
+          <div
+            className={`max-w-[85%] min-w-0 flex flex-col ${
+              m.role === 'user' ? 'items-end' : 'items-start'
+            }`}
+          >
+            <span className="text-[10px] text-zinc-500 mb-1 px-1">
+              {m.role === 'user' ? 'You' : model}
+            </span>
+            <div
+              className={`px-4 py-2 rounded-2xl text-sm leading-relaxed ${
+                m.role === 'user'
+                  ? 'bg-green-600 text-white rounded-tr-sm dark:bg-green-900 dark:text-green-100'
+                  : 'bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-tl-sm dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
+              }`}
+            >
+              <MemoizedMessageContent
+                message={m}
+                onGenImage={onGenImage}
+                onGeminiImage={onGeminiImage}
+                onHuggingFaceImage={onHuggingFaceImage}
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+});
 
 function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage }: {
   message: { id: string; role: string; content: string; image?: string; imageName?: string; loadingText?: string }
@@ -651,3 +801,5 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
     </>
   );
 }
+
+const MemoizedMessageContent = React.memo(MessageContent);

@@ -38,7 +38,6 @@ export function useOllamaChat(
   const [messages, setMessages] = useState<Message[]>([
     { id: WELCOME_ID, role: 'assistant', content: getWelcomeMessage(model) },
   ])
-  const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isConversationLoading, setIsConversationLoading] = useState(Boolean(conversationId))
   const [hasMore, setHasMore] = useState(false)
@@ -96,7 +95,6 @@ export function useOllamaChat(
     setHasMore(false)
     setNextOffset(0)
     setMessages([])
-    setInput('')
     getConversation(nextConversationId, { limit: PAGE_SIZE, offset: 0 })
       .then((data) => {
         if (cancelled) return
@@ -209,7 +207,6 @@ export function useOllamaChat(
     }
     const epoch = epochRef.current
     setMessages((prev) => [...prev, userMessage])
-    setInput('')
     setIsLoading(true)
 
     const history = messagesRef.current
@@ -299,6 +296,28 @@ export function useOllamaChat(
       const assistantId = crypto.randomUUID()
       setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '' }])
 
+      let renderTimeout: ReturnType<typeof setTimeout> | null = null
+      const flushReply = () => {
+        if (renderTimeout !== null) {
+          clearTimeout(renderTimeout)
+          renderTimeout = null
+        }
+        if (epochRef.current !== epoch) return
+
+        setMessages((prev) => {
+          const idx = prev.findIndex((m) => m.id === assistantId)
+          if (idx === -1 || prev[idx].content === fullReply) return prev
+          const updated = [...prev]
+          updated[idx] = { ...updated[idx], content: fullReply }
+          return updated
+        })
+      }
+      const scheduleReplyRender = () => {
+        if (renderTimeout === null) {
+          renderTimeout = setTimeout(flushReply, 50)
+        }
+      }
+
       while (true) {
         const { done, value } = await reader.read()
         if (epochRef.current !== epoch) break
@@ -323,20 +342,14 @@ export function useOllamaChat(
           if (chunk.done) return
           if (chunk.message?.content) {
             fullReply += chunk.message.content
-            setMessages((prev) => {
-              const updated = [...prev]
-              const idx = updated.findIndex((m) => m.id === assistantId)
-              if (idx !== -1) {
-                updated[idx] = { ...updated[idx], content: fullReply }
-              }
-              return updated
-            })
+            scheduleReplyRender()
           }
         } catch {
           // Ignore malformed lines so one bad chunk does not end the chat.
         }
       }
 
+      flushReply()
       if (epochRef.current !== epoch) return
       if (fullReply) {
         await addMessage(conversationId, {
@@ -385,7 +398,6 @@ export function useOllamaChat(
     setMessages([
       { id: WELCOME_ID, role: 'assistant', content: getWelcomeMessage(model) },
     ])
-    setInput('')
     setIsLoading(false)
     setIsConversationLoading(false)
     setHasMore(false)
@@ -394,8 +406,6 @@ export function useOllamaChat(
 
   return {
     messages,
-    input,
-    setInput,
     sendMessage,
     append,
     updateMessage,
