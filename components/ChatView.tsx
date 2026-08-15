@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { ChatAttachment, Message, useOllamaChat } from '@/hooks/useOllamaChat';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Copy, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu } from 'lucide-react';
+import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Copy, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu, Pencil } from 'lucide-react';
 import { COMMANDS, Command } from '@/lib/commands';
 import { formatImagePrompt, getLatestImagePrompt, getPollinationsUrl, extractImagePrompt, limitImagePrompt } from '@/lib/image-utils';
 import ReactMarkdown from 'react-markdown';
@@ -18,6 +18,14 @@ import { safeUrl } from '@/lib/utils';
 import { useModels } from '@/hooks/useModels';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import UserMenu from '@/components/UserMenu';
+import CelestialInfoModal from '@/components/CelestialInfoModal';
+import {
+  isCelestialModel,
+  readCelestialUserInfo,
+  saveCelestialUserInfo,
+  hasDismissedCelestialPrompt,
+  dismissCelestialPrompt,
+} from '@/lib/celestial-user-info';
 import type { Conversation } from '@/lib/db/types';
 
 type SelectedAttachment = ChatAttachment & { dataUrl?: string };
@@ -54,6 +62,8 @@ export default function ChatView({ model, conversationId, onConversationChange, 
   const [attachedImage, setAttachedImage] = useState<SelectedAttachment | null>(null);
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [geminiLoading, setGeminiLoading] = useState(false);
+  const [showCelestialModal, setShowCelestialModal] = useState(false);
+  const [editCelestialModal, setEditCelestialModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollFrameRef = useRef<number | null>(null);
   const shouldStickToBottomRef = useRef(true);
@@ -63,6 +73,11 @@ export default function ChatView({ model, conversationId, onConversationChange, 
       setShowInitialLoading(false);
     }
   }, [isConversationLoading, isModelsLoading]);
+
+  useEffect(() => {
+    const shouldAsk = isCelestialModel(model) && !readCelestialUserInfo() && !hasDismissedCelestialPrompt();
+    setShowCelestialModal(shouldAsk);
+  }, [model]);
 
   useEffect(() => {
     if (!scrollRef.current || !shouldStickToBottomRef.current) return;
@@ -362,6 +377,18 @@ export default function ChatView({ model, conversationId, onConversationChange, 
             </div>
             <span className="text-[10px] text-zinc-500">Ollama Model</span>
           </div>
+          {isCelestialModel(model) && readCelestialUserInfo() && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditCelestialModal(true)}
+              className="text-zinc-500 hover:text-green-500 shrink-0"
+              aria-label="แก้ไขข้อมูลดูดวง"
+              title="แก้ไขข้อมูลดูดวง"
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <UserMenu />
@@ -397,6 +424,20 @@ export default function ChatView({ model, conversationId, onConversationChange, 
         onFileSelect={handleImageSelect}
         onRemoveAttachment={() => setAttachedImage(null)}
         onSubmit={handleComposerSubmit}
+      />
+      <CelestialInfoModal
+        open={showCelestialModal || editCelestialModal}
+        initialInfo={readCelestialUserInfo()}
+        onSave={({ fullName, birthDate }) => {
+          saveCelestialUserInfo(fullName, birthDate);
+          setShowCelestialModal(false);
+          setEditCelestialModal(false);
+        }}
+        onDismiss={() => {
+          dismissCelestialPrompt();
+          setShowCelestialModal(false);
+          setEditCelestialModal(false);
+        }}
       />
       </div>
     </div>
@@ -748,7 +789,7 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
             return <span className="text-zinc-500 dark:text-zinc-500">{children}</span>;
           }
           return (
-            <a href={safeHref} target="_blank" rel="noopener noreferrer" className="break-words [overflow-wrap:anywhere] text-green-600 underline hover:text-green-500 dark:text-green-400 dark:hover:text-green-300">
+            <a href={safeHref} target="_blank" rel="noopener noreferrer" className="break-words [overflow-wrap:anywhere] text-[#FFF] underline hover:text-zinc-100 dark:text-[#FFF] dark:hover:text-zinc-200">
               {children}
             </a>
           );

@@ -9,6 +9,7 @@ import {
   updateConversation,
 } from '@/lib/api/conversations'
 import { shouldIncludeImageInHistory } from '@/lib/chat-history'
+import { isCelestialModel, readCelestialUserInfo, buildCelestialSystemMessage } from '@/lib/celestial-user-info'
 
 export interface Message {
   id: string
@@ -261,12 +262,14 @@ export function useOllamaChat(
     }
 
     try {
+      const celestialInfo = isCelestialModel(model) ? readCelestialUserInfo() : null
       const res = await fetch('/api/ollama/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model,
           messages: [
+            ...(celestialInfo ? [{ role: 'system', content: buildCelestialSystemMessage(celestialInfo) }] : []),
             ...history,
             {
               role: 'user',
