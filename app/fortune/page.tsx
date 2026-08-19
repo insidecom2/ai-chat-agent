@@ -6,11 +6,18 @@ import ThemeToggle from '@/components/ThemeToggle'
 import FortuneForm, { type FortuneFormValues } from '@/components/FortuneForm'
 import FortuneResult from '@/components/FortuneResult'
 import { readCelestialUserInfo } from '@/lib/celestial-user-info'
+import { shuffleTarotCards, TAROT_DECK } from '@/lib/tarot'
 import { splitJsonObjects } from '@/lib/stream-utils'
 
 type Phase = 'form' | 'streaming' | 'done' | 'error'
 
-const EMPTY_VALUES: FortuneFormValues = { fullName: '', birthDate: '', topics: [], extraText: '' }
+const EMPTY_VALUES: FortuneFormValues = {
+  fullName: '',
+  birthDate: '',
+  topics: [],
+  extraText: '',
+  tarotCards: [],
+}
 
 export default function FortunePage() {
   const existing = readCelestialUserInfo()
@@ -19,7 +26,9 @@ export default function FortunePage() {
     birthDate: existing?.birthDate ?? '',
     topics: [],
     extraText: '',
+    tarotCards: [],
   })
+  const [tarotDeck, setTarotDeck] = useState(() => shuffleTarotCards(TAROT_DECK.cards))
   const [phase, setPhase] = useState<Phase>('form')
   const [streamText, setStreamText] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -46,6 +55,7 @@ export default function FortunePage() {
           birthDate: submitted.birthDate,
           topics: submitted.topics,
           extraText: submitted.extraText,
+          ...(submitted.tarotCards.length > 0 ? { tarotCards: submitted.tarotCards } : {}),
         }),
         signal: controller.signal,
       })
@@ -105,6 +115,7 @@ export default function FortunePage() {
   const handleEdit = () => setPhase('form')
   const handleNew = () => {
     setValues({ ...EMPTY_VALUES })
+    setTarotDeck(shuffleTarotCards(TAROT_DECK.cards))
     setFormKey((key) => key + 1)
     setPhase('form')
   }
@@ -125,7 +136,12 @@ export default function FortunePage() {
       </header>
       <main className="mx-auto w-full max-w-2xl px-4 py-6">
         {phase === 'form' ? (
-          <FortuneForm key={formKey} initialValues={values} onSubmit={handleSubmit} />
+          <FortuneForm
+            key={formKey}
+            initialValues={values}
+            tarotDeck={tarotDeck}
+            onSubmit={handleSubmit}
+          />
         ) : (
           <FortuneResult
             values={values}

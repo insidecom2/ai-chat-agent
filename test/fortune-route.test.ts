@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { POST } from '@/app/api/fortune/route'
+import { TAROT_CARDS } from '@/lib/tarot'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -22,6 +23,7 @@ describe('POST /api/fortune', () => {
         birthDate: '1990-01-01',
         topics: ['งาน'],
         extraText: '',
+        tarotCards: [...TAROT_CARDS.slice(0, 10)],
       }),
     })
 
@@ -35,5 +37,7 @@ describe('POST /api/fortune', () => {
       stream: true,
       options: { num_predict: 4096 },
     })
+    expect(payload.messages[1].content).toContain('โปรดวิเคราะห์ไพ่ทาโรต์จากไพ่ที่เลือก')
+    expect(payload.messages[1].content).toContain(TAROT_CARDS[0])
   })
 })

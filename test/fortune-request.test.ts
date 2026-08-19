@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { normalizeFortuneRequest } from '@/lib/fortune'
+import { TAROT_CARDS } from '@/lib/tarot'
 
 describe('normalizeFortuneRequest', () => {
   it('accepts a valid request and trims values', () => {
@@ -11,7 +12,13 @@ describe('normalizeFortuneRequest', () => {
     })
     expect(result).toEqual({
       ok: true,
-      value: { fullName: 'สมชาย ใจดี', birthDate: '1990-01-01', topics: ['งาน', 'เงิน'], extraText: 'เจออุปสรรค' },
+      value: {
+        fullName: 'สมชาย ใจดี',
+        birthDate: '1990-01-01',
+        topics: ['งาน', 'เงิน'],
+        extraText: 'เจออุปสรรค',
+        tarotCards: [],
+      },
     })
   })
 
@@ -42,7 +49,32 @@ describe('normalizeFortuneRequest', () => {
     const result = normalizeFortuneRequest({ fullName: 'สมชาย ใจดี', birthDate: '1990-01-01' })
     expect(result).toEqual({
       ok: true,
-      value: { fullName: 'สมชาย ใจดี', birthDate: '1990-01-01', topics: [], extraText: '' },
+      value: { fullName: 'สมชาย ใจดี', birthDate: '1990-01-01', topics: [], extraText: '', tarotCards: [] },
     })
+  })
+
+  it('accepts exactly ten unique Thai tarot card names', () => {
+    const result = normalizeFortuneRequest({
+      fullName: 'สมชาย ใจดี',
+      birthDate: '1990-01-01',
+      tarotCards: TAROT_CARDS.slice(0, 10),
+    })
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        fullName: 'สมชาย ใจดี',
+        birthDate: '1990-01-01',
+        topics: [],
+        extraText: '',
+        tarotCards: [...TAROT_CARDS.slice(0, 10)],
+      },
+    })
+  })
+
+  it('rejects tarot cards when the count, uniqueness, or names are invalid', () => {
+    const base = { fullName: 'สมชาย ใจดี', birthDate: '1990-01-01' }
+    expect(normalizeFortuneRequest({ ...base, tarotCards: TAROT_CARDS.slice(0, 9) }).ok).toBe(false)
+    expect(normalizeFortuneRequest({ ...base, tarotCards: [...TAROT_CARDS.slice(0, 9), TAROT_CARDS[0]] }).ok).toBe(false)
+    expect(normalizeFortuneRequest({ ...base, tarotCards: [...TAROT_CARDS.slice(0, 9), 'ไพ่ปลอม'] }).ok).toBe(false)
   })
 })
