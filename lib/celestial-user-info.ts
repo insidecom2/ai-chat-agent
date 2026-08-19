@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'gemma-celestial-user-info'
 const DISMISSED_KEY = 'gemma-celestial-prompt-dismissed'
 
-const CELESTIAL_MODEL = 'gemma-celestial:latest'
+export const CELESTIAL_MODEL = 'gemma-celestial:latest'
 
 export interface CelestialUserInfo {
   fullName: string
