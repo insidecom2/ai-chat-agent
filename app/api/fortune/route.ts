@@ -7,6 +7,7 @@ export const runtime = 'nodejs';
 
 const REQUEST_TIMEOUT_MS = 120_000;
 const MAX_REQUEST_BODY = 64_000;
+const MAX_PREDICT_TOKENS = 4_096;
 
 export async function POST(request: NextRequest) {
   const targetHost = (process.env.OLLAMA_HOST || 'http://localhost:11434').replace(/\/$/, '');
@@ -55,7 +56,12 @@ export async function POST(request: NextRequest) {
     const response = await fetch(`${targetHost}/api/chat`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ model: CELESTIAL_MODEL, messages, stream: true }),
+      body: JSON.stringify({
+        model: CELESTIAL_MODEL,
+        messages,
+        stream: true,
+        options: { num_predict: MAX_PREDICT_TOKENS },
+      }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
