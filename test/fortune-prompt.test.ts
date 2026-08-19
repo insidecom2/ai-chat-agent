@@ -22,6 +22,12 @@ describe('buildFortuneUserMessage', () => {
     expect(buildFortuneUserMessage([], '')).toBe('ดูดวงทั่วไปให้ฉัน')
   })
 
+  it('asks the model to analyze selected Thai tarot card names', () => {
+    expect(buildFortuneUserMessage([], '', ['ไพ่คนโง่', 'นักมายากล'])).toBe(
+      'โปรดวิเคราะห์ไพ่ทาโรต์จากไพ่ที่เลือก โดยอธิบายความหมายของไพ่แต่ละใบและภาพรวมให้ฉัน:\n1. ไพ่คนโง่\n2. นักมายากล'
+    )
+  })
+
   it('exposes the six configured topics', () => {
     expect(FORTUNE_TOPICS).toEqual(['งาน', 'เงิน', 'บริวาร', 'ความรัก', 'สุขภาพ', 'โชคลาภ'])
   })

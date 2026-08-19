@@ -55,6 +55,12 @@ export default function FortuneResult({
                 <dd className="whitespace-pre-wrap text-zinc-800 dark:text-zinc-200">{values.extraText}</dd>
               </div>
             )}
+            {values.tarotCards.length > 0 && (
+              <div className="flex gap-2">
+                <dt className="w-28 shrink-0 text-zinc-500 dark:text-zinc-400">ไพ่ทาโรต์</dt>
+                <dd className="text-zinc-800 dark:text-zinc-200">{values.tarotCards.join(', ')}</dd>
+              </div>
+            )}
           </dl>
         </CardContent>
       </Card>

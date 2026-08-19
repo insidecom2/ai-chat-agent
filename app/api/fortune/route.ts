@@ -39,7 +39,11 @@ export async function POST(request: NextRequest) {
     },
     {
       role: 'user',
-      content: buildFortuneUserMessage(parsed.value.topics, parsed.value.extraText),
+      content: buildFortuneUserMessage(
+        parsed.value.topics,
+        parsed.value.extraText,
+        parsed.value.tarotCards
+      ),
     },
   ];
 
