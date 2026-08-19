@@ -13,7 +13,7 @@ interface ModelListViewProps {
 }
 
 export default function ModelListView({ onSelectModel }: ModelListViewProps) {
-  const { data: models, isLoading, isError, error, refetch } = useModels();
+  const { data: models, isLoading, isError, error } = useModels();
 
   return (
     <div className="flex flex-col h-screen w-full max-w-2xl mx-auto p-4 gap-6">
@@ -58,7 +58,7 @@ export default function ModelListView({ onSelectModel }: ModelListViewProps) {
         )}
 
         {!isLoading &&
-          models?.map((model: any) => (
+          models?.map((model) => (
             <Card
               key={model.name}
               className="hover:border-green-500/40 transition-all duration-200 cursor-pointer group active:scale-[0.98]"
