@@ -1,9 +1,10 @@
 'use client'
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { ChatAttachment, Message, useOllamaChat } from '@/hooks/useOllamaChat';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Plus, ArrowRight, Loader2, Check, Copy, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu, Pencil } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Check, Copy, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu, Pencil } from 'lucide-react';
 import { COMMANDS, Command } from '@/lib/commands';
 import { formatImagePrompt, getLatestImagePrompt, getPollinationsUrl, extractImagePrompt, limitImagePrompt } from '@/lib/image-utils';
 import ReactMarkdown from 'react-markdown';
@@ -368,7 +369,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
                 className="bg-transparent text-base font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-green-500 border border-transparent rounded px-1 py-0.5 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700"
                 aria-label="Select model"
               >
-                {models?.map((m: any) => (
+                {models?.map((m) => (
                   <option key={m.name} value={m.name}>
                     {m.name}
                   </option>
@@ -722,7 +723,7 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
   if (message.role === 'assistant' && message.image) {
     const src = safeUrl(message.image);
     return src ? (
-      <img src={src} alt="Generated" className="rounded-lg mb-2 max-w-full h-auto" />
+      <Image src={src} alt="Generated" width={1024} height={1024} unoptimized className="rounded-lg mb-2 max-w-full h-auto" />
     ) : null;
   }
 
@@ -730,7 +731,7 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
     const match = message.content.match(/\(([^)]+)\)/);
     const src = safeUrl(match?.[1]);
     return src ? (
-      <img src={src} alt="Generated" className="rounded-lg mb-2 max-w-full h-auto" />
+      <Image src={src} alt="Generated" width={1024} height={1024} unoptimized className="rounded-lg mb-2 max-w-full h-auto" />
     ) : (
       <>{message.content}</>
     );
@@ -773,7 +774,7 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
             </code>
           ) : (
             <div className="relative group">
-              <CodeBlock className={className} children={children} />
+              <CodeBlock className={className}>{children}</CodeBlock>
               <button
                 onClick={() => handleCopy(String(children), String(message.id))}
                 className="absolute top-2 right-2 p-1.5 rounded-md bg-zinc-200 border border-zinc-300 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity text-xs flex items-center gap-1"
@@ -816,7 +817,7 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
         img({ src, alt }) {
           const safeSrc = typeof src === 'string' ? safeUrl(src) : undefined;
           return safeSrc ? (
-            <img src={safeSrc} alt={alt || ''} className="rounded-lg my-2 max-w-full h-auto" />
+            <Image src={safeSrc} alt={alt || ''} width={1024} height={1024} unoptimized className="rounded-lg my-2 max-w-full h-auto" />
           ) : null;
         },
       }}
