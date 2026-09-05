@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { ChatAttachment, Message, useOllamaChat } from '@/hooks/useOllamaChat';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, ArrowRight, Loader2, Check, Copy, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu, Pencil } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Check, Copy, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu, Pencil, Bell } from 'lucide-react';
 import { COMMANDS, Command } from '@/lib/commands';
 import { formatImagePrompt, getLatestImagePrompt, getPollinationsUrl, extractImagePrompt, limitImagePrompt } from '@/lib/image-utils';
 import ReactMarkdown from 'react-markdown';
@@ -19,6 +19,7 @@ import { safeUrl } from '@/lib/utils';
 import { useModels } from '@/hooks/useModels';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import UserMenu from '@/components/UserMenu';
+import Link from 'next/link';
 import CelestialInfoModal from '@/components/CelestialInfoModal';
 import {
   isCelestialModel,
@@ -392,6 +393,16 @@ export default function ChatView({ model, conversationId, onConversationChange, 
           )}
         </div>
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            className="text-zinc-500 hover:text-green-500"
+          >
+            <Link href="/price-alerts" aria-label="แจ้งเตือนราคา" title="แจ้งเตือนราคา">
+              <Bell className="w-5 h-5" />
+            </Link>
+          </Button>
           <UserMenu />
           <ThemeToggle />
         </div>
