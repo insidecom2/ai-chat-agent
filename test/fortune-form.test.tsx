@@ -14,7 +14,7 @@ const emptyValues: FortuneFormValues = {
 
 const selectTenCards = async (user: ReturnType<typeof userEvent.setup>) => {
   const tarotToggle = screen.getByLabelText('ดูไพ่ทาโรต์')
-  if (!(tarotToggle as HTMLInputElement).checked) await user.click(tarotToggle)
+  if (tarotToggle.getAttribute('aria-checked') !== 'true') await user.click(tarotToggle)
   for (let cardIndex = 1; cardIndex <= 10; cardIndex += 1) {
     await user.click(screen.getByRole('button', { name: `ไพ่ใบที่ ${cardIndex}` }))
   }

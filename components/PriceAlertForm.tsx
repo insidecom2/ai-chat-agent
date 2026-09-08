@@ -147,49 +147,52 @@ export default function PriceAlertForm({ initialValues, isSubmitting, submitErro
               <label htmlFor={`resistance-${row.id}`} className="block text-xs text-zinc-500 dark:text-zinc-400">
                 Resistance {index + 1}
               </label>
-              <input
+              <Input
                 id={`resistance-${row.id}`}
                 type="number"
                 inputMode="decimal"
                 min="0"
+                step="0.01"
                 value={row.resistance}
                 onChange={(e) => updateRow(row.id, 'resistance', e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
               />
             </div>
             <div className="flex-1 space-y-1.5">
               <label htmlFor={`support-${row.id}`} className="block text-xs text-zinc-500 dark:text-zinc-400">
                 Support {index + 1}
               </label>
-              <input
+              <Input
                 id={`support-${row.id}`}
                 type="number"
                 inputMode="decimal"
                 min="0"
+                step="0.01"
                 value={row.support}
                 onChange={(e) => updateRow(row.id, 'support', e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
               />
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => removeRow(row.id)}
               disabled={rows.length <= 1}
               aria-label="ลบแถวนี้"
-              className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:text-red-400"
+              variant="ghost"
+              size="icon"
+              className="mb-0.5 shrink-0 hover:text-red-600 dark:hover:text-red-400"
             >
               <Trash2 className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         ))}
-        <button
+        <Button
           type="button"
           onClick={addRow}
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-600 transition-colors hover:border-green-500 hover:text-green-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/30 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-green-500 dark:hover:text-green-400"
+          variant="outline"
+          className="min-h-11 gap-2"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           เพิ่มระดับ
-        </button>
+        </Button>
       </fieldset>
 
       {(error || submitError) && (

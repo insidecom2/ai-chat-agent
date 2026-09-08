@@ -76,10 +76,11 @@ export default function ChatHistorySidebar({
                     : 'text-zinc-700 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:bg-zinc-800'
                 }`}
               >
-                <button
+                <Button
                   type="button"
                   onClick={() => onSelectConversation(conversation)}
-                  className="flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 pr-12 text-left"
+                  variant="ghost"
+                  className="h-auto w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 pr-12 text-left"
                 >
                   <span className="w-full truncate">
                     {conversation.title || 'Untitled'}
@@ -87,8 +88,8 @@ export default function ChatHistorySidebar({
                   <span className={`text-xs ${isActive ? 'text-white/70' : 'text-zinc-400 dark:text-zinc-500'}`}>
                     {conversation.model} · {formatDate(conversation.updatedAt)}
                   </span>
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   aria-label={isConfirming ? `Confirm delete ${conversation.title || 'conversation'}` : `Delete ${conversation.title || 'conversation'}`}
                   disabled={deleteMutation.isPending}
@@ -96,7 +97,8 @@ export default function ChatHistorySidebar({
                       e.stopPropagation();
                       handleDelete(conversation);
                     }}
-                    className={`absolute right-2 top-2 flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-1 rounded-md p-2 text-xs transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 ${
+                    variant="ghost"
+                    className={`absolute right-2 top-2 min-h-10 min-w-10 shrink-0 gap-1 rounded-md p-2 text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 ${
                       isConfirming
                         ? 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'
                         : isActive
@@ -112,7 +114,7 @@ export default function ChatHistorySidebar({
                     ) : (
                       <Trash2 className="w-3 h-3" />
                     )}
-                </button>
+                </Button>
               </div>
             );
           })}
@@ -125,14 +127,16 @@ export default function ChatHistorySidebar({
             <MessageSquare className="w-3 h-3" />
             Delete conversation?
           </span>
-          <button
+          <Button
             type="button"
             onClick={() => setConfirmId(null)}
-            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
             aria-label="Cancel delete"
           >
             <X className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </div>
       )}
     </aside>

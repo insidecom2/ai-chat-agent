@@ -104,6 +104,31 @@ describe('PriceAlertForm', () => {
     })
   })
 
+  it('allows resistance and support values with up to two decimal places', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(
+      <PriceAlertForm initialValues={emptyValues} isSubmitting={false} submitError={null} onSubmit={onSubmit} />
+    )
+    const resistance = screen.getByLabelText('Resistance 1')
+    const support = screen.getByLabelText('Support 1')
+
+    expect(resistance).toHaveAttribute('step', '0.01')
+    expect(support).toHaveAttribute('step', '0.01')
+
+    await user.type(screen.getByLabelText('วันที่'), '2026-01-01')
+    await user.type(screen.getByLabelText('สัญลักษณ์'), 'XAUUSD')
+    await user.type(resistance, '2400.50')
+    await user.type(support, '2350.25')
+    await user.click(screen.getByRole('button', { name: 'บันทึก' }))
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      date: '2026-01-01',
+      symbol: 'XAUUSD',
+      levels: [{ resistance: 2400.5, support: 2350.25 }],
+    })
+  })
+
   it('prefills from initialValues', () => {
     render(
       <PriceAlertForm
