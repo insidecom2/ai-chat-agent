@@ -3,6 +3,9 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { ChatAttachment, Message, useOllamaChat } from '@/hooks/useOllamaChat';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowLeft, ArrowRight, Loader2, Check, Copy, Paperclip, X, Image as ImageIcon, Sparkles, Bot, Menu, Pencil, Bell } from 'lucide-react';
 import { COMMANDS, Command } from '@/lib/commands';
@@ -364,18 +367,21 @@ export default function ChatView({ model, conversationId, onConversationChange, 
           </Button>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
-              <select
-                value={model}
-                onChange={(e) => onModelChange(e.target.value)}
-                className="bg-transparent text-base font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-green-500 border border-transparent rounded px-1 py-0.5 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700"
+              <Select value={model} onValueChange={onModelChange}>
+                <SelectTrigger
+                className="cursor-pointer"
                 aria-label="Select model"
               >
+                <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
                 {models?.map((m) => (
-                  <option key={m.name} value={m.name}>
+                  <SelectItem key={m.name} value={m.name}>
                     {m.name}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
+                </SelectContent>
+              </Select>
             </div>
             <span className="text-[10px] text-zinc-500">Ollama Model</span>
           </div>
@@ -577,17 +583,19 @@ function ChatComposer({
                 <span className="flex-1 truncate text-sm text-zinc-600 dark:text-zinc-400">
                   {isReadingFile ? 'Reading file…' : attachedImage.name}
                 </span>
-                <button
+                <Button
                   type="button"
                   onClick={onRemoveAttachment}
-                  className="rounded p-1 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 p-1 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                   aria-label="Remove attached image"
                 >
                   <X className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
             )}
-            <textarea
+            <Textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => {
@@ -597,10 +605,10 @@ function ChatComposer({
               onKeyDown={handleKeyDown}
               placeholder="Type a message…"
               rows={1}
-              className="w-full resize-none p-3 rounded-xl bg-white border border-zinc-200 text-zinc-700 text-base focus:outline-none focus:border-green-500 transition-colors min-h-[44px] max-h-32 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300"
+              className="min-h-[44px] max-h-32 resize-none rounded-xl border-zinc-200 p-3 text-base focus-visible:ring-green-500/30 dark:border-zinc-800"
             />
           </div>
-          <input
+          <Input
             ref={fileInputRef}
             type="file"
             accept="image/*,.pdf,application/pdf"
@@ -667,15 +675,16 @@ const MessageList = React.memo(function MessageList({
     <div className="flex flex-col gap-4">
       {hasMore && (
         <div className="flex justify-center">
-          <button
+          <Button
             type="button"
             onClick={loadEarlier}
             disabled={isLoadingEarlier}
-            className="inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
+            variant="outline"
+            className="h-auto gap-2 px-3 py-1.5 text-zinc-500 dark:text-zinc-400"
           >
             {isLoadingEarlier && <Loader2 className="w-3 h-3 animate-spin" />}
             Load earlier messages
-          </button>
+          </Button>
         </div>
       )}
       {messages.map((m) => (
@@ -786,12 +795,13 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
           ) : (
             <div className="relative group">
               <CodeBlock className={className}>{children}</CodeBlock>
-              <button
+              <Button
                 onClick={() => handleCopy(String(children), String(message.id))}
-                className="absolute top-2 right-2 p-1.5 rounded-md bg-zinc-200 border border-zinc-300 text-zinc-500 hover:text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity text-xs flex items-center gap-1"
+                variant="outline"
+                className="absolute right-2 top-2 h-auto gap-1 rounded-md border-zinc-300 bg-zinc-200 p-1.5 text-xs text-zinc-500 opacity-0 transition-opacity hover:bg-zinc-300 hover:text-zinc-700 group-hover:opacity-100 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
               >
                 {copiedId === String(message.id) ? <Check className="w-3 h-3" /> : 'Copy'}
-              </button>
+              </Button>
             </div>
           );
         },
@@ -837,43 +847,48 @@ function MessageContent({ message, onGenImage, onGeminiImage, onHuggingFaceImage
       </ReactMarkdown>
       {message.role === 'user' && (
         <div className="mt-1 flex justify-end">
-          <button
+          <Button
             type="button"
             onClick={() => handleCopy(message.content, String(message.id))}
             title="Copy message"
             aria-label="Copy message"
-            className="rounded p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white"
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 p-1 text-white/70 hover:bg-white/15 hover:text-white"
           >
             {copiedId === String(message.id) ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          </button>
+          </Button>
         </div>
       )}
       {imagePrompt && (
         <div className="mt-2 flex flex-wrap gap-2">
-          <button
+          <Button
             type="button"
             onClick={() => onGenImage?.(imagePrompt)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
+            variant="outline"
+            className="h-auto gap-1 px-2 py-1 text-[11px] text-zinc-500 dark:text-zinc-400"
           >
             <ImageIcon className="w-3 h-3" />
             Gen Image
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => onGeminiImage?.(imagePrompt)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
+            variant="outline"
+            className="h-auto gap-1 px-2 py-1 text-[11px] text-zinc-500 dark:text-zinc-400"
           >
             <Sparkles className="w-3 h-3" />
             Gemini Image
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => onHuggingFaceImage?.(imagePrompt)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-zinc-500 border border-zinc-200 hover:text-green-600 hover:border-green-500 transition-colors dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-green-400"
+            variant="outline"
+            className="h-auto gap-1 px-2 py-1 text-[11px] text-zinc-500 dark:text-zinc-400"
           >
             <Bot className="w-3 h-3" />
             Hugging Face
-          </button>
+          </Button>
         </div>
       )}
     </>

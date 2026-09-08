@@ -2,6 +2,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
 import type { PriceAlertGroup } from '@/types/price-alerts'
 
@@ -31,15 +32,17 @@ export default function PriceAlertGroupCard({ group, onDelete, isDeleting }: Pri
           </span>
           <span className="text-xs text-zinc-500 dark:text-zinc-400">{group.count} ระดับ</span>
         </Link>
-        <button
+        <Button
           type="button"
           onClick={() => onDelete(group)}
           disabled={isDeleting}
           aria-label={`ลบ ${group.symbol} วันที่ ${group.date}`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-400 dark:hover:text-red-400"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 shrink-0 hover:text-red-600 dark:hover:text-red-400"
         >
           <Trash2 className="h-4 w-4" />
-        </button>
+        </Button>
       </CardContent>
     </Card>
   )

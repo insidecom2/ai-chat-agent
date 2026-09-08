@@ -54,14 +54,16 @@ export default function CelestialInfoModal({ open, initialInfo, onSave, onDismis
           >
             ข้อมูลสำหรับการดูดวง
           </h2>
-          <button
+          <Button
             type="button"
             onClick={onDismiss}
             aria-label="ปิด"
-            className="rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           >
             <X className="h-5 w-5" />
-          </button>
+          </Button>
         </div>
         <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
           โมเดลนี้ใช้ข้อมูลของคุณในการให้คำตอบ กรุณากรอกข้อมูลด้านล่าง

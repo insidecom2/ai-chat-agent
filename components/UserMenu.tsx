@@ -2,6 +2,7 @@
 import React from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function UserMenu() {
   const { data: session } = useSession();
@@ -28,15 +29,17 @@ export default function UserMenu() {
           </span>
         )}
       </div>
-      <button
+      <Button
         type="button"
         onClick={() => signOut({ callbackUrl: '/' })}
-        className="rounded-md p-1.5 text-zinc-400 hover:text-red-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-red-500 dark:hover:bg-zinc-800"
         aria-label="Sign out"
         title="Sign out"
       >
         <LogOut className="w-4 h-4" />
-      </button>
+      </Button>
     </div>
   );
 }

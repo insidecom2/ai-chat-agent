@@ -2,6 +2,8 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
 import { FORTUNE_TOPICS } from '@/lib/fortune'
 import { shuffleTarotCards, TAROT_DECK, type TarotCard } from '@/lib/tarot'
 import TarotCardBack from '@/components/TarotCardBack'
@@ -117,12 +119,10 @@ export default function FortuneForm({ initialValues, tarotDeck, onSubmit }: Fort
                   : 'border-zinc-200 hover:border-zinc-300 dark:border-zinc-800 dark:hover:border-zinc-700'
               }`}
             >
-              <input
-                type="checkbox"
+                <Checkbox
                 checked={topics.includes(topic)}
-                onChange={() => toggleTopic(topic)}
-                className="h-4 w-4 accent-green-600"
-              />
+                onCheckedChange={() => toggleTopic(topic)}
+                />
               <span className="text-zinc-700 dark:text-zinc-300">{topic}</span>
             </label>
           ))}
@@ -131,12 +131,11 @@ export default function FortuneForm({ initialValues, tarotDeck, onSubmit }: Fort
 
       <div className="rounded-xl border border-zinc-200 bg-white/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
         <label htmlFor="fortune-tarot-enabled" className="flex cursor-pointer items-center gap-3">
-          <input
+          <Checkbox
             id="fortune-tarot-enabled"
-            type="checkbox"
             checked={tarotEnabled}
-            onChange={(event) => handleTarotToggle(event.target.checked)}
-            className="h-5 w-5 accent-green-600"
+            onCheckedChange={(checked) => handleTarotToggle(checked === true)}
+            className="h-5 w-5"
           />
           <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">ดูไพ่ทาโรต์</span>
         </label>
@@ -151,14 +150,15 @@ export default function FortuneForm({ initialValues, tarotDeck, onSubmit }: Fort
             <legend className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
               เลือกไพ่ทาโรต์ ({tarotCards.length}/10)
             </legend>
-            <button
+            <Button
               type="button"
               onClick={resetTarotCards}
-              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-600 transition-colors hover:border-green-500 hover:text-green-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/30 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-green-500 dark:hover:text-green-400"
+              variant="outline"
+              className="min-h-11 gap-2"
             >
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
               สุ่มไพ่ใหม่
-            </button>
+            </Button>
           </div>
           <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
             เลือกไพ่ให้ครบ 10 ใบ ไพ่จะถูกสับใหม่ทุกครั้งที่เริ่มเปิดการดูไพ่
@@ -173,7 +173,7 @@ export default function FortuneForm({ initialValues, tarotDeck, onSubmit }: Fort
               const selected = tarotCards.includes(card.name_th)
               const unavailable = tarotCards.length >= 10 && !selected
               return (
-                <button
+                <Button
                   key={card.name}
                   type="button"
                   aria-label={`ไพ่ใบที่ ${index + 1}${selected ? ' เลือกแล้ว' : ''}`}
@@ -183,12 +183,13 @@ export default function FortuneForm({ initialValues, tarotDeck, onSubmit }: Fort
                   style={{
                     transform: selected ? 'translateY(-20%)' : 'translateY(0)',
                   }}
-                  className={`relative mb-6 h-40 w-24 shrink-0 rounded-xl mr-[-72px] transition-transform duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/50 ${
+                  variant="ghost"
+                  className={`relative mb-6 h-40 w-24 shrink-0 rounded-xl mr-[-72px] px-0 py-0 transition-transform duration-200 ease-out focus-visible:ring-green-500/50 ${
                     selected ? 'drop-shadow-[0_8px_8px_rgba(22,101,52,0.35)]' : 'hover:-translate-y-1'
                   } ${unavailable ? 'cursor-not-allowed opacity-45' : 'cursor-pointer'}`}
                 >
                   <TarotCardBack selected={selected} cardId={`tarot-card-${index}`} />
-                </button>
+                </Button>
               )
               })}
             </div>
@@ -200,13 +201,13 @@ export default function FortuneForm({ initialValues, tarotDeck, onSubmit }: Fort
         <label htmlFor="fortune-extra-text" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
           ข้อความเพิ่มเติม (ไม่บังคับ)
         </label>
-        <textarea
+        <Textarea
           id="fortune-extra-text"
           value={extraText}
           onChange={(e) => setExtraText(e.target.value)}
           placeholder="ระบุคำถามหรือข้อความเพิ่มเติม…"
           rows={3}
-          className="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+          className="resize-none"
         />
       </div>
 
