@@ -37,8 +37,8 @@ export default function ChatHistorySidebar({
   };
 
   return (
-    <aside className="w-64 h-screen shrink-0 flex flex-col border-r border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-[#0d0d15]">
-      <div className="p-3 border-b border-zinc-200 dark:border-zinc-800">
+    <aside className="w-64 h-screen shrink-0 flex flex-col border-r border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-[#0d0d15]">
+      <div className="p-3 border-b border-zinc-300 dark:border-zinc-700">
         <Button
           variant="outline"
           size="sm"
@@ -70,7 +70,7 @@ export default function ChatHistorySidebar({
             return (
               <div
                 key={conversation.id}
-                className={`group relative rounded-lg border-b border-zinc-200/70 last:border-b-0 dark:border-zinc-800/70 text-base transition-colors ${
+                className={`group relative rounded-lg border border-zinc-300 dark:border-zinc-700 text-base transition-colors ${
                   isActive
                     ? 'bg-green-600 text-white dark:bg-green-900 dark:text-green-100'
                     : 'text-zinc-700 hover:bg-zinc-200/70 dark:text-zinc-300 dark:hover:bg-zinc-800'
@@ -80,13 +80,17 @@ export default function ChatHistorySidebar({
                   type="button"
                   onClick={() => onSelectConversation(conversation)}
                   variant="ghost"
-                  className="h-auto w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 pr-12 text-left"
+                  className={`h-auto w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 pr-12 text-left ${
+                    isActive
+                      ? '!bg-green-600 !text-white hover:!bg-green-700 hover:!text-white dark:!bg-green-900 dark:!text-white dark:hover:!bg-green-800 dark:hover:!text-white'
+                      : 'text-zinc-700 hover:bg-zinc-200/70 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-950'
+                  }`}
                 >
-                  <span className="w-full truncate">
+                  <span className={`w-full truncate ${isActive ? 'text-white' : 'group-hover:text-zinc-950'}`}>
                     {conversation.title || 'Untitled'}
                   </span>
-                  <span className={`text-xs ${isActive ? 'text-white/70' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                    {conversation.model} · {formatDate(conversation.updatedAt)}
+                  <span className={`text-xs ${isActive ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-950 dark:text-zinc-500 dark:group-hover:text-zinc-950'}`}>
+                    {formatDate(conversation.updatedAt)}
                   </span>
                 </Button>
                 <Button

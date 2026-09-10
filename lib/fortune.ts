@@ -12,9 +12,9 @@ export function buildFortuneUserMessage(
   const parts: string[] = []
   if (tarotCards.length > 0) {
     parts.push(
-      `โปรดวิเคราะห์ไพ่ทาโรต์จากไพ่ที่เลือก โดยอธิบายความหมายของไพ่แต่ละใบและภาพรวมให้ฉัน:\n${tarotCards
-        .map((card, index) => `${index + 1}. ${card}`)
-        .join('\n')}`
+      `โปรดวิเคราะห์ไพ่ทาโรต์จากไพ่ที่เลือกเป็นภาษาไทย โดยตอบเป็น Markdown ตามรูปแบบนี้อย่างเคร่งครัด:\n${tarotCards
+        .map((card, index) => `## ไพ่ที่ ${index + 1}: ${card}\nคำทำนายของไพ่ใบนี้`)
+        .join('\n\n')}\n\n## ภาพรวม\nสรุปคำทำนายจากไพ่ทั้งหมด`
     )
   }
   if (topics.length > 0) {
