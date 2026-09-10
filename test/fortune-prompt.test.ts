@@ -23,9 +23,9 @@ describe('buildFortuneUserMessage', () => {
   })
 
   it('asks the model to analyze selected Thai tarot card names', () => {
-    expect(buildFortuneUserMessage([], '', ['ไพ่คนโง่', 'นักมายากล'])).toBe(
-      'โปรดวิเคราะห์ไพ่ทาโรต์จากไพ่ที่เลือก โดยอธิบายความหมายของไพ่แต่ละใบและภาพรวมให้ฉัน:\n1. ไพ่คนโง่\n2. นักมายากล'
-    )
+  expect(buildFortuneUserMessage([], '', ['ไพ่คนโง่', 'นักมายากล'])).toBe(
+    'โปรดวิเคราะห์ไพ่ทาโรต์จากไพ่ที่เลือกเป็นภาษาไทย โดยตอบเป็น Markdown ตามรูปแบบนี้อย่างเคร่งครัด:\n## ไพ่ที่ 1: ไพ่คนโง่\nคำทำนายของไพ่ใบนี้\n\n## ไพ่ที่ 2: นักมายากล\nคำทำนายของไพ่ใบนี้\n\n## ภาพรวม\nสรุปคำทำนายจากไพ่ทั้งหมด'
+  )
   })
 
   it('exposes the six configured topics', () => {

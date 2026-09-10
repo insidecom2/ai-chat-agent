@@ -184,7 +184,7 @@ export default function FortuneForm({ initialValues, tarotDeck, onSubmit }: Fort
                     transform: selected ? 'translateY(-20%)' : 'translateY(0)',
                   }}
                   variant="ghost"
-                  className={`relative mb-6 h-40 w-24 shrink-0 rounded-xl mr-[-72px] px-0 py-0 transition-transform duration-200 ease-out focus-visible:ring-green-500/50 ${
+                  className={`relative mb-6 h-40 w-24 shrink-0 rounded-xl mr-[-72px] px-0 py-0 transition-transform duration-200 ease-out hover:!bg-transparent dark:hover:!bg-transparent focus-visible:ring-green-500/50 ${
                     selected ? 'drop-shadow-[0_8px_8px_rgba(22,101,52,0.35)]' : 'hover:-translate-y-1'
                   } ${unavailable ? 'cursor-not-allowed opacity-45' : 'cursor-pointer'}`}
                 >
