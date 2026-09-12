@@ -4,10 +4,14 @@ import { TAROT_CARDS } from '@/lib/tarot'
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
 })
 
 describe('POST /api/fortune', () => {
   it('requests enough output tokens for a complete fortune reading', async () => {
+    vi.stubEnv('OLLAMA_API_KEY', 'test-secret')
+    vi.stubEnv('OLLAMA_JWT_ISSUER', 'chat-agent')
+    vi.stubEnv('OLLAMA_JWT_SUBJECT', 'fortune-service')
     const fetchMock = vi.fn().mockResolvedValue(
       new Response('{"done":true}\n', {
         headers: { 'content-type': 'application/x-ndjson' },
