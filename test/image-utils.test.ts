@@ -14,39 +14,39 @@ describe('limitImagePrompt', () => {
 
 describe('formatImagePrompt', () => {
   it('returns the prompt unchanged when no special syntax', () => {
-    expect(formatImagePrompt('hello world', [])).toBe('hello world');
+    expect(formatImagePrompt('hello world')).toBe('hello world');
   });
 
   it('strips /imagine prefix', () => {
-    expect(formatImagePrompt('/imagine a sunset over mountains', [])).toBe('a sunset over mountains');
+    expect(formatImagePrompt('/imagine a sunset over mountains')).toBe('a sunset over mountains');
   });
 
   it('extracts quoted text', () => {
-    expect(formatImagePrompt('prompt with "quoted content" inside', [])).toBe('quoted content');
+    expect(formatImagePrompt('prompt with "quoted content" inside')).toBe('quoted content');
   });
 
   it('extracts first quoted pair when multiple exist', () => {
-    expect(formatImagePrompt('first "alpha" second "beta"', [])).toBe('alpha');
+    expect(formatImagePrompt('first "alpha" second "beta"')).toBe('alpha');
   });
 
   it('returns default for empty prompt', () => {
-    expect(formatImagePrompt('', [])).toBe('A beautiful landscape');
+    expect(formatImagePrompt('')).toBe('A beautiful landscape');
   });
 
   it('/imagine takes precedence over quotes', () => {
-    expect(formatImagePrompt('/imagine dragon "not this"', [])).toBe('dragon "not this"');
+    expect(formatImagePrompt('/imagine dragon "not this"')).toBe('dragon "not this"');
   });
 
   it('handles prompt with only whitespace after /imagine', () => {
-    expect(formatImagePrompt('/imagine    ', [])).toBe('A beautiful landscape');
+    expect(formatImagePrompt('/imagine    ')).toBe('A beautiful landscape');
   });
 
   it('handles prompt with only quotes (default fallback)', () => {
-    expect(formatImagePrompt('""', [])).toBe('A beautiful landscape');
+    expect(formatImagePrompt('""')).toBe('A beautiful landscape');
   });
 
   it('handles unclosed quote', () => {
-    expect(formatImagePrompt('text with "unclosed', [])).toBe('text with "unclosed');
+    expect(formatImagePrompt('text with "unclosed')).toBe('text with "unclosed');
   });
 });
 

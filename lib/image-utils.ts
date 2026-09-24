@@ -9,7 +9,6 @@ export function limitImagePrompt(prompt: string): string {
 
 export function formatImagePrompt(
   prompt: string,
-  _history: { role: string; content: string }[]
 ): string {
   let cleaned = prompt
 
