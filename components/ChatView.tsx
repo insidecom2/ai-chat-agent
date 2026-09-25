@@ -214,7 +214,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
       return;
     }
 
-    const finalPrompt = formatImagePrompt(sourcePrompt, []);
+    const finalPrompt = formatImagePrompt(sourcePrompt);
 
     if (cmd.key === '/gen-image') {
       append({ role: 'assistant', content: finalPrompt });
