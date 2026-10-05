@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app/api/bybit/funding/route.ts": {
+      "regions": ["sin1"],
+      "maxDuration": 20
+    }
+  }
+}
