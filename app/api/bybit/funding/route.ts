@@ -4,6 +4,8 @@ const BYBIT_API_HOSTS = ["https://api.bybit.com", "https://api.bytick.com"]
 const REQUEST_TIMEOUT_MS = 8_000
 
 export const maxDuration = 20
+export const runtime = "edge"
+export const preferredRegion = "sin1"
 
 type BybitPayload = {
   retCode?: number
