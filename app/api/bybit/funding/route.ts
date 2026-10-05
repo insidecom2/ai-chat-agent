@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
 
 const BYBIT_API_HOSTS = ["https://api.bybit.com", "https://api.bytick.com"]
-const REQUEST_TIMEOUT_MS = 4_000
+const REQUEST_TIMEOUT_MS = 8_000
+
+export const preferredRegion = "sin1"
+export const maxDuration = 20
 
 type BybitPayload = {
   retCode?: number
