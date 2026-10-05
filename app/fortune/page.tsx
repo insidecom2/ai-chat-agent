@@ -5,6 +5,7 @@ import { ArrowLeft, Sparkles } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 import FortuneForm, { type FortuneFormValues } from '@/components/FortuneForm'
 import FortuneResult from '@/components/FortuneResult'
+import FortuneRedirectModal from '@/components/FortuneRedirectModal'
 import { readCelestialUserInfo } from '@/lib/celestial-user-info'
 import { shuffleTarotCards, TAROT_DECK } from '@/lib/tarot'
 import { splitJsonObjects } from '@/lib/stream-utils'
@@ -122,6 +123,7 @@ export default function FortunePage() {
 
   return (
     <div className="min-h-[100dvh] w-full bg-zinc-50 dark:bg-[#0a0a0f]">
+      <FortuneRedirectModal />
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-[#0d0d15]">
         <div className="flex items-center gap-3">
           <Link href="/" className="text-zinc-500 transition-colors hover:text-green-500" aria-label="กลับไปหน้าแชท">

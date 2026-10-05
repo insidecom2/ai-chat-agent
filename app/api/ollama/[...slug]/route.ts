@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUserId } from '@/lib/db/auth';
+import { createOllamaAuthorization, OllamaAuthConfigurationError } from '@/lib/ollama-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -7,22 +8,23 @@ export const runtime = 'nodejs';
 const MAX_REQUEST_BODY = 30_000_000
 
 export async function GET(request: NextRequest) {
-  if (!(await requireUserId())) {
+  const userId = await requireUserId();
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  return proxyRequest(request);
+  return proxyRequest(request, userId);
 }
 
 export async function POST(request: NextRequest) {
-  if (!(await requireUserId())) {
+  const userId = await requireUserId();
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  return proxyRequest(request);
+  return proxyRequest(request, userId);
 }
 
-async function proxyRequest(request: NextRequest) {
+async function proxyRequest(request: NextRequest, userId: string) {
   const targetHost = (process.env.OLLAMA_HOST || 'http://localhost:11434').replace(/\/$/, '');
-  const apiKey = process.env.OLLAMA_API_KEY || '';
 
   const path = request.nextUrl.pathname.replace('/api/ollama', '/api');
   const targetUrl = `${targetHost}${path}`;
@@ -32,8 +34,13 @@ async function proxyRequest(request: NextRequest) {
     Accept: 'application/x-ndjson, text/event-stream',
     'Accept-Encoding': 'identity',
   };
-  if (apiKey) {
-    headers['Authorization'] = `Bearer ${apiKey}`;
+  try {
+    headers['Authorization'] = createOllamaAuthorization(userId);
+  } catch (error) {
+    if (error instanceof OllamaAuthConfigurationError) {
+      return NextResponse.json({ error: 'Ollama authentication is not configured.' }, { status: 500 });
+    }
+    throw error;
   }
 
   try {

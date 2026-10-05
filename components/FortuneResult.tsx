@@ -8,6 +8,9 @@ import remarkGfm from 'remark-gfm'
 import { replaceLatexSymbols } from '@/lib/latex-symbols'
 import { safeUrl } from '@/lib/utils'
 import type { FortuneFormValues } from '@/components/FortuneForm'
+import TarotCardFace from '@/components/TarotCardFace'
+import { TAROT_DECK } from '@/lib/tarot'
+import { parseTarotReading } from '@/lib/tarot-reading'
 
 interface FortuneResultProps {
   values: FortuneFormValues
@@ -26,6 +29,11 @@ export default function FortuneResult({
   onEdit,
   onNew,
 }: FortuneResultProps) {
+  const tarotCards = values.tarotCards
+    .map((cardName) => TAROT_DECK.cards.find((card) => card.name_th === cardName))
+    .filter((card): card is (typeof TAROT_DECK.cards)[number] => card !== undefined)
+  const tarotReading = parseTarotReading(streamText, values.tarotCards)
+
   return (
     <div className="space-y-6">
       <Card>
@@ -65,6 +73,62 @@ export default function FortuneResult({
         </CardContent>
       </Card>
 
+      {tarotCards.length > 0 && (
+        <section aria-labelledby="tarot-reading-heading" className="space-y-3">
+          <h2 id="tarot-reading-heading" className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            คำทำนายไพ่ทาโรต์
+          </h2>
+          <div className="grid gap-3">
+            {tarotCards.map((card, index) => {
+              const explanation = tarotReading.cardReadings.find((reading) => reading.cardName === card.name_th)?.explanation
+              return (
+                <Card key={card.name_th}>
+                  <CardContent className="flex gap-3 p-3">
+                    <TarotCardFace card={card} position={index + 1} />
+                    <div className="min-w-0 space-y-1.5">
+                      <p className="text-xs font-medium text-green-700 dark:text-green-400">ไพ่ใบที่ {index + 1}</p>
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{card.name_th}</h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">{card.name}</p>
+                      {explanation ? (
+                        <div className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              a({ href, children }) {
+                                const safeHref = safeUrl(href)
+                                if (!safeHref) {
+                                  return <span className="text-zinc-500 dark:text-zinc-500">{children}</span>
+                                }
+                                return (
+                                  <a
+                                    href={safeHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="break-words underline hover:text-green-600 dark:hover:text-green-400"
+                                  >
+                                    {children}
+                                  </a>
+                                )
+                              },
+                            }}
+                          >
+                            {replaceLatexSymbols(explanation)}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                          {isLoading ? 'กำลังอ่านคำทำนายของไพ่ใบนี้…' : 'ไม่พบคำทำนายแยกรายใบในคำตอบ'}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       <Card>
         <CardContent className="p-4">
           {isLoading && (
@@ -79,7 +143,7 @@ export default function FortuneResult({
             </p>
           )}
           <div className="min-h-[120px] text-base leading-relaxed text-zinc-800 dark:text-zinc-200">
-            {streamText ? (
+            {tarotReading.remainingText ? (
               <>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -102,7 +166,7 @@ export default function FortuneResult({
                     },
                   }}
                 >
-                  {replaceLatexSymbols(streamText)}
+                  {replaceLatexSymbols(tarotReading.remainingText)}
                 </ReactMarkdown>
                 {isLoading && (
                   <span

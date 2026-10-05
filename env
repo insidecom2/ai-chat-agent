@@ -1,5 +1,9 @@
 OLLAMA_HOST=
+# Shared secret used to sign the Ollama HS256 JWT. Keep this server-only.
 OLLAMA_API_KEY=
+OLLAMA_JWT_ISSUER=
+# Used by unauthenticated server routes, such as /api/fortune.
+OLLAMA_JWT_SUBJECT=
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash-image
 

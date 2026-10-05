@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CELESTIAL_MODEL, buildCelestialSystemMessage } from '@/lib/celestial-user-info';
 import { buildFortuneUserMessage, normalizeFortuneRequest } from '@/lib/fortune';
+import { createOllamaAuthorization, OllamaAuthConfigurationError } from '@/lib/ollama-auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +12,6 @@ const MAX_PREDICT_TOKENS = 4_096;
 
 export async function POST(request: NextRequest) {
   const targetHost = (process.env.OLLAMA_HOST || 'http://localhost:11434').replace(/\/$/, '');
-  const apiKey = process.env.OLLAMA_API_KEY || '';
 
   let raw: unknown;
   try {
@@ -52,8 +52,13 @@ export async function POST(request: NextRequest) {
     Accept: 'application/x-ndjson, text/event-stream',
     'Accept-Encoding': 'identity',
   };
-  if (apiKey) {
-    headers['Authorization'] = `Bearer ${apiKey}`;
+  try {
+    headers['Authorization'] = createOllamaAuthorization();
+  } catch (error) {
+    if (error instanceof OllamaAuthConfigurationError) {
+      return NextResponse.json({ error: 'Ollama authentication is not configured.' }, { status: 500 });
+    }
+    throw error;
   }
 
   try {

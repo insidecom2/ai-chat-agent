@@ -15,7 +15,7 @@ describe('FortuneResult', () => {
     render(
       <FortuneResult
         values={values}
-        streamText="กำลังวิเคราะห์"
+        streamText={'## ไพ่ที่ 1: ไพ่คนโง่\nเริ่มต้นสิ่งใหม่\n\n## ไพ่ที่ 2: นักมายากล\nใช้ความสามารถ\n\n## ภาพรวม\nกำลังวิเคราะห์'}
         isLoading
         errorMessage={null}
         onEdit={vi.fn()}
@@ -24,6 +24,8 @@ describe('FortuneResult', () => {
     )
 
     expect(screen.getByText('ไพ่คนโง่, นักมายากล')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'คำทำนายไพ่ทาโรต์' })).toBeInTheDocument()
+    expect(screen.getByText('เริ่มต้นสิ่งใหม่')).toBeInTheDocument()
     expect(screen.getByText('กำลังดูดวง…')).toBeInTheDocument()
   })
 

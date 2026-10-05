@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { shuffleTarotCards, TAROT_CARDS, TAROT_DECK } from '@/lib/tarot'
+import { getTarotCardImagePath, shuffleTarotCards, TAROT_CARDS, TAROT_DECK } from '@/lib/tarot'
 
 describe('tarot deck', () => {
   it('contains exactly 78 unique Thai card names', () => {
@@ -16,5 +16,16 @@ describe('tarot deck', () => {
     const shuffled = shuffleTarotCards(TAROT_DECK.cards, () => 0.5)
     expect(shuffled).toHaveLength(78)
     expect(new Set(shuffled.map((card) => card.name_th))).toEqual(new Set(TAROT_CARDS))
+  })
+
+  it('maps every card to its Rider-Waite image in the public deck', () => {
+    const paths = TAROT_DECK.cards.map(getTarotCardImagePath)
+
+    expect(paths).toHaveLength(78)
+    expect(paths).not.toContain('')
+    expect(new Set(paths)).toHaveLength(78)
+    expect(getTarotCardImagePath(TAROT_DECK.cards[0])).toBe('/tarot/00_Fool.jpg')
+    expect(getTarotCardImagePath(TAROT_DECK.cards[22])).toBe('/tarot/Wands01.jpg')
+    expect(getTarotCardImagePath(TAROT_DECK.cards[77])).toBe('/tarot/Pents14.jpg')
   })
 })
