@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ChatAttachment, useOllamaChat } from '@/hooks/useOllamaChat';
+import { ChatAttachment, useChat } from '@/hooks/useChat';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/toast';
 import { extractImageText, extractPdfText } from '@/lib/document-utils';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useModels } from '@/hooks/useModels';
+import { GEMINI_CHAT_MODEL, isGeminiChatModel } from '@/store/modelStore';
 import { ChatComposer } from '@/components/chatview/ChatComposer';
 import { MessageList } from '@/components/chatview/MessageList';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
@@ -53,7 +54,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
     isLoadingEarlier,
     loadEarlier,
     reset,
-  } = useOllamaChat(model, conversationId, onConversationChange);
+  } = useChat(model, conversationId, onConversationChange);
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showInitialLoading, setShowInitialLoading] = useState(true);
@@ -387,6 +388,7 @@ export default function ChatView({ model, conversationId, onConversationChange, 
                 <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                <SelectItem value={GEMINI_CHAT_MODEL}>Gemini 3.1 Flash Lite</SelectItem>
                 {models?.map((m) => (
                   <SelectItem key={m.name} value={m.name}>
                     {m.name}
@@ -395,7 +397,9 @@ export default function ChatView({ model, conversationId, onConversationChange, 
                 </SelectContent>
               </Select>
             </div>
-            <span className="text-[10px] text-zinc-500">Ollama Model</span>
+            <span className="text-[10px] text-zinc-500">
+              {isGeminiChatModel(model) ? 'Gemini API' : 'Ollama Model'}
+            </span>
           </div>
           {isCelestialModel(model) && readCelestialUserInfo() && (
             <Button

@@ -32,7 +32,7 @@ const PAGE_SIZE = 100
 const MAX_HISTORY_MESSAGES = 30
 const WELCOME_ID = 'welcome'
 
-export function useOllamaChat(
+export function useChat(
   model: string,
   conversationId?: string | null,
   onConversationChange?: (id: string | null) => void
@@ -218,7 +218,12 @@ export function useOllamaChat(
       .map((m) => ({
         role: m.role,
         content: sanitizeHistoryContent(m.content),
-        ...(shouldIncludeImageInHistory(m) ? { images: [getBase64Image(m.image!)] } : {}),
+        ...(shouldIncludeImageInHistory(m)
+          ? {
+              images: [getBase64Image(m.image!)],
+              imageMimeTypes: [getImageMimeType(m.image!)],
+            }
+          : {}),
         ...(m.documentText
           ? { content: withDocumentBoundary(m.content, m.documentText) }
           : {}),
@@ -264,25 +269,29 @@ export function useOllamaChat(
 
     try {
       const celestialInfo = isCelestialModel(model) ? readCelestialUserInfo() : null
-      const res = await fetch('/api/ollama/chat', {
+      const currentMessage = {
+        role: 'user',
+        content: messageContent,
+        ...(attachment?.image && !attachment.documentText
+          ? {
+              images: [getBase64Image(attachment.image)],
+              imageMimeTypes: [getImageMimeType(attachment.image)],
+            }
+          : {}),
+        ...(attachment?.documentText
+          ? { content: withDocumentBoundary(messageContent, attachment.documentText) }
+          : {}),
+      }
+      const chatMessages = [...history, currentMessage]
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model,
-          messages: [
-            ...(celestialInfo ? [{ role: 'system', content: buildCelestialSystemMessage(celestialInfo) }] : []),
-            ...history,
-            {
-              role: 'user',
-              content: messageContent,
-              ...(attachment?.image && !attachment.documentText
-                ? { images: [getBase64Image(attachment.image)] }
-                : {}),
-              ...(attachment?.documentText
-                ? { content: withDocumentBoundary(messageContent, attachment.documentText) }
-                : {}),
-            },
-          ],
+          systemInstruction: celestialInfo
+            ? buildCelestialSystemMessage(celestialInfo)
+            : undefined,
+          messages: chatMessages,
           stream: true,
         }),
         signal: controller.signal,
@@ -456,6 +465,10 @@ function toViewMessage(m: {
 
 function getBase64Image(dataUrl: string): string {
   return dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl
+}
+
+function getImageMimeType(dataUrl: string): string {
+  return dataUrl.match(/^data:([^;,]+)/)?.[1] || 'image/jpeg'
 }
 
 function withDocumentBoundary(message: string, documentText: string): string {

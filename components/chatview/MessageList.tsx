@@ -3,7 +3,7 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { Message } from '@/hooks/useOllamaChat';
+import type { Message } from '@/hooks/useChat';
 import { MessageContent } from '@/components/chatview/MessageContent';
 
 interface MessageListProps {
