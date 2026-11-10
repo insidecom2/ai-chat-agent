@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { COMMANDS, type Command } from '@/lib/commands';
-import type { ChatAttachment } from '@/hooks/useOllamaChat';
+import type { ChatAttachment } from '@/hooks/useChat';
 
 type SelectedAttachment = ChatAttachment & { dataUrl?: string };
 

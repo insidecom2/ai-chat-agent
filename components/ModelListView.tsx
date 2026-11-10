@@ -7,6 +7,7 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 import { formatBytes, formatDate } from '@/lib/utils';
 import ThemeToggle from '@/components/ThemeToggle';
 import UserMenu from '@/components/UserMenu';
+import { GEMINI_CHAT_MODEL } from '@/store/modelStore';
 
 interface ModelListViewProps {
   onSelectModel: (model: string) => void;
@@ -31,6 +32,25 @@ export default function ModelListView({ onSelectModel }: ModelListViewProps) {
       </header>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin space-y-3 pr-2">
+        <Card
+          className="hover:border-blue-500/50 transition-all duration-200 cursor-pointer group active:scale-[0.98]"
+          onClick={() => onSelectModel(GEMINI_CHAT_MODEL)}
+        >
+          <CardContent className="p-4 flex justify-between items-center">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-zinc-800 group-hover:text-blue-600 transition-colors dark:text-zinc-200 dark:group-hover:text-blue-400">
+                  Gemini 3.1 Flash Lite
+                </span>
+                <Badge variant="outline" className="text-[10px]">
+                  Gemini API
+                </Badge>
+              </div>
+              <p className="text-[11px] text-zinc-500">Hosted model</p>
+            </div>
+          </CardContent>
+        </Card>
+
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-12 text-zinc-500 gap-3">
             <Loader2 className="w-8 h-8 animate-spin text-green-500" />
